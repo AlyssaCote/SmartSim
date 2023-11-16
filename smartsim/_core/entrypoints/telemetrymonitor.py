@@ -28,6 +28,7 @@ import argparse
 import json
 import logging
 import os
+import os.path
 import pathlib
 import signal
 import sys
@@ -514,8 +515,8 @@ def event_loop(
     :type experiment_dir: pathlib.Path
     :param logger: a preconfigured Logger instance
     :type logger: logging.Logger"""
-    elapsed: int = 0
-    last_ts: int = get_ts()
+    elapsed = 0
+    last_ts = get_ts()
 
     while observer.is_alive():
         timestamp = get_ts()
@@ -586,7 +587,6 @@ def main(
         if observer.is_alive():
             observer.stop()  # type: ignore
             observer.join()
-
     return 1
 
 
@@ -633,7 +633,16 @@ if __name__ == "__main__":
     parser = get_parser()
     args = parser.parse_args()
 
-    log = logging.getLogger()
+    log = logging.getLogger(f"{__name__}.TelemetryMonitor")
+    log.setLevel(logging.DEBUG)
+    log.propagate = False
+    fh = logging.FileHandler(
+        # TODO: find nice place to put this file
+        # os.path.join(args.exp_dir, TELMON_SUBDIR, "telemetrymonitor.log"),
+        # For now I'm hard coding this
+        "/lus/scratch/drozt/playground/ss/dash-int/telemetrymonitor.log",
+        'a')
+    log.addHandler(fh)
 
     # Must register cleanup before the main loop is running
     register_signal_handlers()
@@ -642,10 +651,10 @@ if __name__ == "__main__":
         main(
             int(args.frequency), pathlib.Path(args.exp_dir), log, cooldown=args.cooldown
         )
-        sys.exit(0)
     except Exception:
         log.exception(
             "Shutting down telemetry monitor due to unexpected error", exc_info=True
         )
-
-    sys.exit(1)
+        sys.exit(1)
+    else:
+        sys.exit(0)
