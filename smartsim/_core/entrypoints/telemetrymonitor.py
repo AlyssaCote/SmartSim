@@ -640,7 +640,7 @@ if __name__ == "__main__":
         # TODO: find nice place to put this file
         # os.path.join(args.exp_dir, TELMON_SUBDIR, "telemetrymonitor.log"),
         # For now I'm hard coding this
-        "/lus/scratch/drozt/playground/ss/dash-int/telemetrymonitor.log",
+        "/lus/scratch/cote/ssdev/ss/dash-int/telemetrymonitor.log",
         'a')
     log.addHandler(fh)
 

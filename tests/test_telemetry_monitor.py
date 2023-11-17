@@ -533,7 +533,10 @@ def test_telemetry_serial_models_nonblocking(fileutils, wlmutils, monkeypatch):
         #  # Create the SmartSim Model
         smartsim_models = [ exp.create_model(f"perroquet_{i}", app_settings) for i in range(5) ]
         exp.generate(*smartsim_models)
-        exp.start(*smartsim_models)
+        for model in smartsim_models:
+            exp.start(model)
+        # exp.start(*smartsim_models)
+        # exp.start()
 
         snooze_nonblocking(test_dir, max_delay=60, post_data_delay=10)
 
