@@ -1042,6 +1042,7 @@ def test_telemetry_autoshutdown(
         model = exp.create_model("model", run_settings=rs)
 
         start_time = get_ts_ms()
+        exp.generate(model)
         exp.start(model, block=True)
 
         telemetry_output_path = pathlib.Path(test_dir) / config.telemetry_subdir
