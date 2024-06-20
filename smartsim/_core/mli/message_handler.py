@@ -24,9 +24,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import typing as t
-
-import tensorflow as tf
-import torch
+import numpy as np
 
 from .mli_schemas.data import data_references_capnp
 from .mli_schemas.request import request_capnp
@@ -39,7 +37,7 @@ from .mli_schemas.tensor import tensor_capnp
 class MessageHandler:
     @staticmethod
     def build_tensor(
-        tensor: t.Union[torch.Tensor, tf.Tensor],
+        tensor: np.ndarray[t.Any, np.dtype[t.Any]],
         order: "tensor_capnp.Order",
         data_type: "tensor_capnp.NumericalType",
         dimensions: t.List[int],

@@ -31,6 +31,9 @@ import pathlib
 import shutil
 import time
 import typing as t
+import os
+import pickle
+import base64
 
 import torch
 
@@ -50,6 +53,9 @@ from smartsim._core.mli.worker import (
     IntegratedTorchWorker,
     MachineLearningWorkerBase,
 )
+from smartsim._core.mli.queue.queue import QueueBase
+from smartsim._core.mli.queue.dragon import DragonQueue
+from smartsim._core.mli.queue.mp import MPQueue
 from smartsim.log import get_logger
 
 if t.TYPE_CHECKING:
@@ -59,6 +65,25 @@ if t.TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+
+class EnvironmentConfigLoader: # rename this
+    def __init__(self):
+        self._feature_store_bytes = os.getenv("SSFeatureStore", None)
+        self._queue_bytes = os.getenv("SSQueue", None)
+
+    def get_feature_store(self):
+        if self._feature_store_bytes is not None:
+            self.feature_store = pickle.loads(base64.b64decode(self._feature_store_bytes))
+        else:
+            self.feature_store = None
+        return self.feature_store
+
+    def get_queue(self): # this is actually a dragon FLI, but we're going to contunie calling it a queue for now.
+        if self._queue_bytes is not None:
+            self.queue = pickle.loads(base64.b64decode(self._queue_bytes))
+        else:
+            self.queue = None
+        return self.queue
 
 def deserialize_message(
     data_blob: bytes, channel_type: t.Type[CommChannelBase]
@@ -176,9 +201,8 @@ class WorkerManager(Service):
 
     def __init__(
         self,
-        task_queue: "mp.Queue[bytes]",
+        configs: EnvironmentConfigLoader,
         worker: MachineLearningWorkerBase,
-        feature_store: t.Optional[FeatureStore] = None,
         as_service: bool = False,
         cooldown: int = 0,
         comm_channel_type: t.Type[CommChannelBase] = DragonCommChannel,
@@ -195,9 +219,9 @@ class WorkerManager(Service):
         super().__init__(as_service, cooldown)
 
         """a collection of workers the manager is controlling"""
-        self._task_queue: "mp.Queue[bytes]" = task_queue
+        self._task_queue: "mp.Queue[bytes]" = configs.get_queue()
         """the queue the manager monitors for new tasks"""
-        self._feature_store: t.Optional[FeatureStore] = feature_store
+        self._feature_store: t.Optional[FeatureStore] = configs.get_feature_store()
         """a feature store to retrieve models from"""
         self._worker = worker
         """The ML Worker implementation"""
@@ -316,7 +340,7 @@ def mock_work(worker_manager_queue: "mp.Queue[bytes]") -> None:
         # 2. for demo, only one downstream but we'd normally have to filter
         #       msg content and send to the correct downstream (worker) queue
         timestamp = time.time_ns()
-        output_dir = "/lus/bnchlu1/mcbridch/code/ss/_tmp"
+        output_dir = "/lus/scratch/cote/smartsim/SmartSim/smartsim/_core/mli/tmp"
         output_path = pathlib.Path(output_dir)
 
         mock_channel = output_path / f"brainstorm-{timestamp}.txt"
@@ -418,7 +442,7 @@ if __name__ == "__main__":
 
     def prepare_environment() -> pathlib.Path:
         """Cleanup prior outputs to run demo repeatedly"""
-        path = pathlib.Path("/lus/bnchlu1/mcbridch/code/ss/_tmp")
+        path = pathlib.Path("/lus/scratch/cote/smartsim/SmartSim/smartsim/_core/mli/tmp")
         if path.exists():
             shutil.rmtree(path)  # clean up prior results
 

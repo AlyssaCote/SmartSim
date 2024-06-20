@@ -27,6 +27,7 @@
 import pathlib
 import typing as t
 from abc import ABC, abstractmethod
+import pickle
 
 import smartsim.error as sse
 from smartsim.log import get_logger
@@ -164,6 +165,12 @@ class DragonFeatureStore(FeatureStore):
     def __init__(self, storage: DragonDict) -> None:
         """Initialize the DragonFeatureStore instance"""
         self._storage = storage
+
+    def __getstate__(self) -> t.ByteString:
+        return pickle.dumps(self._storage)
+        
+    def __setstate__(self, value: t.ByteString) -> None:
+        self._storage = pickle.loads(value)
 
     def __getitem__(self, key: str) -> t.Any:
         """Retrieve an item using key
