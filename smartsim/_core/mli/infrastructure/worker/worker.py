@@ -28,38 +28,97 @@ import typing as t
 from abc import ABC, abstractmethod
 
 import smartsim.error as sse
-from smartsim._core.mli.comm.channel.channel import CommChannelBase
 from smartsim._core.mli.infrastructure.storage.featurestore import FeatureStore
 from smartsim.log import get_logger
+from smartsim._core.mli.mli_schemas.request import request_capnp
+from pydantic import BaseModel, validator
+from pydantic.utils import GetterDict
 
 logger = get_logger(__name__)
 
 
-class InferenceRequest:
+class InferenceRequestGetter(GetterDict):
+    def get(self, key: str, default: t.Any) -> t.Any:
+        proto_obj: request_capnp.Request = proto_obj
+
+        if key == "model_key":
+            if proto_obj.model.which() == "modelKey":
+                model_key = proto_obj.model.modelKey.key
+                return model_key
+
+        if key == "callback_key":
+            callback_key = proto_obj.replyChannel.reply
+            return callback_key
+
+        if key == "raw_inputs":
+            raw_inputs = [data.blob for data in proto_obj.input.inputData]
+            return raw_inputs
+
+        if key == "input_keys":
+            input_keys = [input_key.key for input_key in proto_obj.input.inputKeys]
+            return input_keys
+
+        if key == "input_meta":
+            input_meta = [data.tensorDescriptor for data in proto_obj.input.inputData]
+            return input_meta
+
+        if key == "output_keys":
+            output_keys = [output_key.key for output_key in proto_obj.input.outputKeys]
+            return output_keys
+
+        if key == "raw_model":
+            if proto_obj.model.which() == "modelData":
+                model_bytes = proto_obj.model.modelData
+                return model_bytes
+
+        if key == "batch_size":
+            return 0
+
+        return default
+
+
+class InferenceRequest(BaseModel):
     """Internal representation of an inference request from a client"""
 
-    def __init__(
-        self,
-        model_key: t.Optional[str] = None,
-        callback: t.Optional[CommChannelBase] = None,
-        raw_inputs: t.Optional[t.List[bytes]] = None,
-        # todo: copying byte array is likely to create a copy of the data in
-        # capnproto and will be a performance issue later
-        input_keys: t.Optional[t.List[str]] = None,
-        input_meta: t.Optional[t.List[t.Any]] = None,
-        output_keys: t.Optional[t.List[str]] = None,
-        raw_model: t.Optional[bytes] = None,
-        batch_size: int = 0,
-    ):
-        """Initialize the object"""
-        self.model_key = model_key
-        self.raw_model = raw_model
-        self.callback = callback
-        self.raw_inputs = raw_inputs
-        self.input_keys = input_keys or []
-        self.input_meta = input_meta or []
-        self.output_keys = output_keys or []
-        self.batch_size = batch_size
+    model_key: t.Optional[str] = None
+    callback_key: t.Optional[str] = None
+    raw_inputs: t.Optional[t.List[bytes]] = []
+    input_keys: t.Optional[t.List[str]] = []
+    input_meta: t.Optional[t.List[t.Any]] = []
+    output_keys: t.Optional[t.List[str]] = []
+    raw_model: t.Optional[bytes] = None
+    batch_size: int = 0
+
+    class Config:
+        orm_mode = True
+        getter_dict = InferenceRequestGetter
+
+    @validator("model_key", "raw_model")
+    def check_model(cls, value: t.Any) -> t.Any:
+        if not value:
+            raise ValueError(
+                "Unable to continue without model bytes or feature store key"
+            )
+        return value
+
+    @validator("input_keys", "raw_inputs")
+    def check_inputs(cls, value: t.Any) -> t.Any:
+        if not value:
+            raise ValueError(
+                "Unable to continue without input bytes or feature store keys"
+            )
+        return value
+
+    @validator("callback_key")
+    def check_callback_key(cls, value: t.Any) -> t.Any:
+        if not value:
+            raise ValueError("No callback channel provided in request")
+        return value
+
+    @validator("model_key", "input_keys", "output_keys", always=True)
+    def requires_feature_store(cls, value: t.Any, values: t.Dict[str, t.Any]):
+        """Determine if the request requires a feature store"""
+        return any((values["model_key"], values["input_keys"], values["output_keys"]))
 
 
 class InferenceReply:

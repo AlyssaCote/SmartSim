@@ -53,59 +53,8 @@ def deserialize_message(
 ) -> InferenceRequest:
     """Deserialize a message from a byte stream into an InferenceRequest
     :param data_blob: The byte stream to deserialize"""
-    # todo: consider moving to XxxCore and only making
-    # workers implement the inputs and model conversion?
-
-    # alternatively, consider passing the capnproto models
-    # to this method instead of the data_blob...
-
-    # something is definitely wrong here... client shouldn't have to touch
-    # callback (or batch size)
-
-    request = MessageHandler.deserialize_request(data_blob)
-    # return request
-    model_key: t.Optional[str] = None
-    model_bytes: t.Optional[bytes] = None
-
-    if request.model.which() == "modelKey":
-        model_key = request.model.modelKey.key
-    elif request.model.which() == "modelData":
-        model_bytes = request.model.modelData
-
-    callback_key = request.replyChannel.reply
-
-    # todo: shouldn't this be `CommChannel.find` instead of `DragonCommChannel`
-    comm_channel = channel_type(callback_key)
-    # comm_channel = DragonCommChannel(request.replyChannel)
-
-    input_keys: t.Optional[t.List[str]] = None
-    input_bytes: t.Optional[t.List[bytes]] = (
-        None  # these will really be tensors already
-    )
-
-    # # client example
-    # msg = Message()
-    # t = torch.Tensor()
-    # msg.inputs = [custom_byte_converter(t)]
-    # mli_client.request_inference(msg)
-    # # end client
-    input_meta: t.List[t.Any] = []
-
-    if request.input.which() == "inputKeys":
-        input_keys = [input_key.key for input_key in request.input.inputKeys]
-    elif request.input.which() == "inputData":
-        input_bytes = [data.blob for data in request.input.inputData]
-        input_meta = [data.tensorDescriptor for data in request.input.inputData]
-
-    inference_request = InferenceRequest(
-        model_key=model_key,
-        callback=comm_channel,
-        raw_inputs=input_bytes,
-        input_meta=input_meta,
-        input_keys=input_keys,
-        raw_model=model_bytes,
-        batch_size=0,
-    )
+    protobuf_request = MessageHandler.deserialize_request(data_blob)
+    inference_request = InferenceRequest.from_orm(protobuf_request)
     return inference_request
 
 
@@ -189,33 +138,11 @@ class WorkerManager(Service):
         self._comm_channel_type = comm_channel_type
         """The type of communication channel to construct for callbacks"""
 
-    def _validate_request(self, request: InferenceRequest) -> bool:
-        """Ensure the request can be processed.
-        :param request: The request to validate
-        :return: True if the request is valid, False otherwise"""
-        if not self._feature_store:
-            if request.model_key:
-                logger.error("Unable to load model by key without feature store")
-                return False
-
-            if request.input_keys:
-                logger.error("Unable to load inputs by key without feature store")
-                return False
-
-            if request.output_keys:
-                logger.error("Unable to persist outputs by key without feature store")
-                return False
-
-        if not request.model_key and not request.raw_model:
-            logger.error("Unable to continue without model bytes or feature store key")
-            return False
-
-        if not request.input_keys and not request.raw_inputs:
-            logger.error("Unable to continue without input bytes or feature store keys")
-            return False
-
-        if request.callback is None:
-            logger.error("No callback channel provided in request")
+    def _ensure_feature_store(self, request: InferenceRequest) -> bool:
+        """Ensure the feature store is available for use
+        :param request: The request to process"""
+        if request.requires_feature_store and not self._feature_store:
+            logger.error("Feature store not available for request")
             return False
 
         return True
@@ -233,7 +160,7 @@ class WorkerManager(Service):
         request_bytes: bytes = self._task_queue.get()
 
         request = deserialize_message(request_bytes, self._comm_channel_type)
-        if not self._validate_request(request):
+        if not self._ensure_feature_store(request):
             return
 
         # # let the worker perform additional custom deserialization
@@ -277,8 +204,9 @@ class WorkerManager(Service):
 
         # serialized = self._worker.serialize_reply(request, transformed_output)
         serialized_resp = MessageHandler.serialize_response(response)  # type: ignore
-        if request.callback:
-            request.callback.send(serialized_resp)
+        if request.callback_key:
+            channel = self._comm_channel_type(request.callback_key)
+            channel.send(serialized_resp)
 
     def _can_shutdown(self) -> bool:
         """Return true when the criteria to shut down the service are met."""

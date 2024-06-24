@@ -84,7 +84,7 @@ def persist_torch_model(test_dir: str) -> pathlib.Path:
 #     msg_bytes = MessageHandler.serialize_request(request)
 
 #     inference_request = worker.deserialize(msg_bytes)
-#     assert inference_request.callback._descriptor == expected_callback_channel
+#     assert inference_request.callback_key == expected_callback_channel
 
 
 # @pytest.mark.skipif(not torch_available, reason="Torch backend is not installed")
@@ -121,7 +121,7 @@ def persist_torch_model(test_dir: str) -> pathlib.Path:
 #     msg_bytes = MessageHandler.serialize_request(request)
 
 #     inference_request = worker.deserialize(msg_bytes)
-#     assert inference_request.callback._descriptor == expected_callback_channel
+#     assert inference_request.callback_key == expected_callback_channel
 
 
 # @pytest.mark.skipif(not torch_available, reason="Torch backend is not installed")
@@ -162,7 +162,7 @@ def persist_torch_model(test_dir: str) -> pathlib.Path:
 #     msg_bytes = MessageHandler.serialize_request(request)
 
 #     inference_request = worker.deserialize(msg_bytes)
-#     assert inference_request.callback._descriptor == expected_callback_channel
+#     assert inference_request.callback_key == expected_callback_channel
 
 
 # @pytest.mark.skipif(not torch_available, reason="Torch backend is not installed")
@@ -206,7 +206,7 @@ def persist_torch_model(test_dir: str) -> pathlib.Path:
 #     msg_bytes = MessageHandler.serialize_request(request)
 
 #     inference_request = worker.deserialize(msg_bytes)
-#     assert inference_request.callback._descriptor == expected_callback_channel
+#     assert inference_request.callback_key == expected_callback_channel
 
 
 # @pytest.mark.skipif(not torch_available, reason="Torch backend is not installed")
@@ -250,7 +250,7 @@ def persist_torch_model(test_dir: str) -> pathlib.Path:
 #     msg_bytes = MessageHandler.serialize_request(request)
 
 #     inference_request = worker.deserialize(msg_bytes)
-#     assert inference_request.callback._descriptor == expected_callback_channel
+#     assert inference_request.callback_key == expected_callback_channel
 
 
 # @pytest.mark.skipif(not torch_available, reason="Torch backend is not installed")
