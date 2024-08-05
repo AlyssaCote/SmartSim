@@ -55,7 +55,7 @@ class InferenceRequest:
         self,
         model_key: t.Optional[str] = None,
         callback: t.Optional[CommChannelBase] = None,
-        raw_inputs: t.Optional[t.List[t.Any]] = None,
+        raw_inputs: t.Optional[t.List[t.Any]] = None, # fix typing
         # todo: copying byte array is likely to create a copy of the data in
         # capnproto and will be a performance issue later
         input_keys: t.Optional[t.List[str]] = None,
@@ -129,7 +129,7 @@ class FetchInputResult:
     """A wrapper around fetched inputs"""
 
     def __init__(
-        self, result: t.List[np.ndarray], meta: t.Optional[t.List[t.Any]]
+        self, result: t.Union[t.List[bytes], t.List[np.ndarray]], meta: t.Optional[t.List[t.Any]]
     ) -> None:
         """Initialize the object"""
         self.inputs = result

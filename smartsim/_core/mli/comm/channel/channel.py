@@ -45,7 +45,7 @@ class CommChannelBase(ABC):
         :param value: The value to send"""
 
     @abstractmethod
-    def recv(self) -> t.List[bytes]:
+    def recv(self) -> t.Tuple[t.Any, t.Any]:
         """Receieve a message through the underlying communication channel
         :returns: the received message"""
 
