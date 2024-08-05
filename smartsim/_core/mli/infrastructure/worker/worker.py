@@ -34,6 +34,8 @@ import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+import numpy as np
+
 from .....error import SmartSimError
 from .....log import get_logger
 from ...comm.channel.channel import CommChannelBase
@@ -53,7 +55,7 @@ class InferenceRequest:
         self,
         model_key: t.Optional[str] = None,
         callback: t.Optional[CommChannelBase] = None,
-        raw_inputs: t.Optional[t.List[bytes]] = None,
+        raw_inputs: t.Optional[t.List[t.Any]] = None,
         # todo: copying byte array is likely to create a copy of the data in
         # capnproto and will be a performance issue later
         input_keys: t.Optional[t.List[str]] = None,
@@ -126,7 +128,9 @@ class ExecuteResult:
 class FetchInputResult:
     """A wrapper around fetched inputs"""
 
-    def __init__(self, result: t.List[bytes], meta: t.Optional[t.List[t.Any]]) -> None:
+    def __init__(
+        self, result: t.List[np.ndarray], meta: t.Optional[t.List[t.Any]]
+    ) -> None:
         """Initialize the object"""
         self.inputs = result
         self.meta = meta

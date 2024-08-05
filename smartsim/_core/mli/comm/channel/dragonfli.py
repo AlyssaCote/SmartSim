@@ -33,6 +33,8 @@ import dragon.channels as dch
 import sys
 import typing as t
 
+import cloudpickle as cp
+
 import smartsim._core.mli.comm.channel.channel as cch
 from smartsim.log import get_logger
 
@@ -57,16 +59,15 @@ class DragonFLIChannel(cch.CommChannelBase):
         with self._fli.sendh(timeout=None, stream_channel=self._channel) as sendh:
             sendh.send_bytes(value)
 
-    def recv(self) -> t.List[bytes]:
-        """Receieve a message through the underlying communication channel
+    def recv(self) -> t.Tuple[t.Any, t.Any]:  # fix this
+        """Receive a message through the underlying communication channel
         :returns: the received message"""
-        messages = []
-        eot = False
-        with self._fli.recvh(timeout=0.001) as recvh:
-            while not eot:
-                try:
-                    message, _ = recvh.recv_bytes(timeout=None)
-                    messages.append(message)
-                except fli.FLIEOT:
-                    eot = True
-        return messages
+        recvh = self._fli.recvh(timeout=None)
+        request_bytes = None
+        received_tensors = []
+        try:
+            request_bytes = recvh.recv_bytes(timeout=None)
+            received_tensors = cp.load(file=fli.PickleReadAdapter(recvh=recvh))
+            return request_bytes, received_tensors
+        except Exception:
+            raise ValueError("No request data found")

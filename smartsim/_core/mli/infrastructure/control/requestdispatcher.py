@@ -411,24 +411,16 @@ class RequestDispatcher(Service):
             raise SmartSimError("No incoming channel for dispatcher")
 
         try:
-            bytes_list: t.List[bytes] = self._incoming_channel.recv()
-        except Exception:
+            request_bytes, tensor_list = self._incoming_channel.recv()
+        except Exception as exc:
             self._perf_timer.start_timings()
+            exception_handler(exc, None, "No request data found.")
         else:
-            if not bytes_list:
-                exception_handler(
-                    ValueError("No request data found"),
-                    None,
-                    "No request data found.",
-                )
-
-            request_bytes = bytes_list[0]
-            tensor_bytes_list = bytes_list[1:]
             self._perf_timer.start_timings()
 
             request = deserialize_message(request_bytes, self._comm_channel_type)
-            if request.input_meta and tensor_bytes_list:
-                request.raw_inputs = tensor_bytes_list
+            if request.input_meta and tensor_list:
+                request.raw_inputs = tensor_list
 
             self._perf_timer.measure_time("deserialize_message")
             if not self._validate_request(request):

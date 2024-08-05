@@ -41,6 +41,8 @@ import numpy
 import os
 import time
 import torch
+import cloudpickle as cp
+import pickle
 
 from mpi4py import MPI
 from smartsim._core.mli.message_handler import MessageHandler
@@ -95,13 +97,18 @@ class ProtoClient:
         self._perf_timer.measure_time("build_request")
         request_bytes = MessageHandler.serialize_request(request)
         self._perf_timer.measure_time("serialize_request")
-        tensor_bytes = [bytes(tensor.data) for tensor in tensors]
+        # tensor_bytes = [bytes(tensor.data) for tensor in tensors]
         # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
-        self._perf_timer.measure_time("serialize_tensor")
-        with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
-            to_sendh.send_bytes(request_bytes)
-            for tb in tensor_bytes:
-                to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+        # self._perf_timer.measure_time("serialize_tensor")
+        to_sendh = self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch)
+        to_sendh.send_bytes(request_bytes)
+        # self._perf_timer.measure_time("send request bytes")
+        cp.dump(tensors, file=fli.PickleWriteAdapter(sendh=to_sendh), protocol=pickle.HIGHEST_PROTOCOL)
+        # self._perf_timer.measure_time("pickle adapter send tensors")
+        # with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+        #     to_sendh.send_bytes(request_bytes)
+        #     for tb in tensor_bytes:
+        #         to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
                 # to_sendh.send_bytes(bytes(t.data))
 
         self._perf_timer.measure_time("send")
