@@ -171,7 +171,7 @@ if __name__ == "__main__":
         torch_device = args.device.replace("gpu", "cuda")
         pt_model = torch.jit.load(io.BytesIO(initial_bytes=(resnet.model))).to(torch_device)
 
-    TOTAL_ITERATIONS = 100
+    TOTAL_ITERATIONS = 1
 
     for log2_bsize in range(args.log_max_batchsize+1):
         b_size: int = 2**log2_bsize

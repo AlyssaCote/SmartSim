@@ -36,6 +36,8 @@ import typing as t
 import smartsim._core.mli.comm.channel.channel as cch
 from smartsim.log import get_logger
 
+from memory_profiler import profile
+
 logger = get_logger(__name__)
 
 
@@ -55,6 +57,7 @@ class DragonFLIChannel(cch.CommChannelBase):
             dch.Channel.make_process_local() if sender_supplied else None
         )
 
+    @profile
     def send(self, value: bytes) -> None:
         """Send a message through the underlying communication channel
 
@@ -62,6 +65,7 @@ class DragonFLIChannel(cch.CommChannelBase):
         with self._fli.sendh(timeout=None, stream_channel=self._channel) as sendh:
             sendh.send_bytes(value)
 
+    @profile
     def recv(self) -> t.List[bytes]:
         """Receieve a message through the underlying communication channel
 

@@ -31,6 +31,8 @@ from ..worker.worker import MachineLearningWorkerBase
 from .requestdispatcher import RequestBatch
 from .....log import get_logger
 
+from memory_profiler import profile
+
 logger = get_logger(__name__)
 
 
@@ -80,6 +82,7 @@ class DeviceManager:
         self._device = device
         """Device managed by this object"""
 
+    @profile
     def _load_model_on_device(
         self,
         worker: MachineLearningWorkerBase,
@@ -91,6 +94,7 @@ class DeviceManager:
         loaded_model = worker.load_model(batch, model_bytes, self._device.name)
         self._device.add_model(batch.model_key.key, loaded_model.model)
 
+    
     def get_device(
         self,
         worker: MachineLearningWorkerBase,

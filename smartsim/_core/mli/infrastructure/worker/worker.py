@@ -41,6 +41,8 @@ from ...infrastructure.storage.featurestore import FeatureStore, FeatureStoreKey
 from ...message_handler import MessageHandler
 from ...mli_schemas.model.model_capnp import Model
 
+from memory_profiler import profile
+
 if t.TYPE_CHECKING:
     from smartsim._core.mli.mli_schemas.response.response_capnp import Status
     from smartsim._core.mli.mli_schemas.tensor.tensor_capnp import TensorDescriptor
@@ -50,7 +52,7 @@ logger = get_logger(__name__)
 
 class InferenceRequest:
     """Internal representation of an inference request from a client"""
-
+    @profile
     def __init__(
         self,
         model_key: t.Optional[FeatureStoreKey] = None,
@@ -83,7 +85,7 @@ class InferenceRequest:
 
 class InferenceReply:
     """Internal representation of the reply to a client request for inference"""
-
+    @profile
     def __init__(
         self,
         outputs: t.Optional[t.Collection[t.Any]] = None,
@@ -100,7 +102,7 @@ class InferenceReply:
 
 class LoadModelResult:
     """A wrapper around a loaded model"""
-
+    @profile
     def __init__(self, model: t.Any) -> None:
         """Initialize the object"""
         self.model = model
@@ -108,7 +110,7 @@ class LoadModelResult:
 
 class TransformInputResult:
     """A wrapper around a transformed batch of input tensors"""
-
+    @profile
     def __init__(
         self, result: t.Any, slices: list[slice], dims: list[list[int]]
     ) -> None:
@@ -124,7 +126,7 @@ class TransformInputResult:
 
 class ExecuteResult:
     """A wrapper around inference results"""
-
+    @profile
     def __init__(self, result: t.Any, slices: list[slice]) -> None:
         """Initialize the object"""
         self.predictions = result
@@ -133,7 +135,7 @@ class ExecuteResult:
 
 class FetchInputResult:
     """A wrapper around fetched inputs"""
-
+    @profile
     def __init__(self, result: t.List[bytes], meta: t.Optional[t.List[t.Any]]) -> None:
         """Initialize the object"""
         self.inputs = result
@@ -142,7 +144,7 @@ class FetchInputResult:
 
 class TransformOutputResult:
     """A wrapper around inference results transformed for transmission"""
-
+    @profile
     def __init__(
         self, result: t.Any, shape: t.Optional[t.List[int]], order: str, dtype: str
     ) -> None:
@@ -155,7 +157,7 @@ class TransformOutputResult:
 
 class CreateInputBatchResult:
     """A wrapper around inputs batched into a single request"""
-
+    @profile
     def __init__(self, result: t.Any) -> None:
         """Initialize the object"""
         self.batch = result
@@ -163,7 +165,7 @@ class CreateInputBatchResult:
 
 class FetchModelResult:
     """A wrapper around raw fetched models"""
-
+    @profile
     def __init__(self, result: bytes) -> None:
         """Initialize the object"""
         self.model_bytes: bytes = result
@@ -178,20 +180,24 @@ class RequestBatch:
     model_key: FeatureStoreKey
 
     @property
+    @profile
     def has_valid_requests(self) -> bool:
         return len(self.requests) > 0
 
     @property
+    @profile
     def has_raw_model(self) -> bool:
         return self.raw_model is not None
 
     @property
+    @profile
     def raw_model(self) -> t.Optional[t.Any]:
         if self.has_valid_requests:
             return self.requests[0].raw_model
         return None
 
     @property
+    @profile
     def input_keys(self) -> t.List[FeatureStoreKey]:
         keys = []
         for request in self.requests:
@@ -200,6 +206,7 @@ class RequestBatch:
         return keys
 
     @property
+    @profile
     def output_keys(self) -> t.List[FeatureStoreKey]:
         keys = []
         for request in self.requests:
@@ -212,6 +219,7 @@ class MachineLearningWorkerCore:
     """Basic functionality of ML worker that is shared across all worker types"""
 
     @staticmethod
+    @profile
     def deserialize_message(
         data_blob: bytes,
         callback_factory: t.Callable[[bytes], CommChannelBase],
@@ -268,6 +276,7 @@ class MachineLearningWorkerCore:
         return inference_request
 
     @staticmethod
+    @profile
     def prepare_outputs(reply: InferenceReply) -> t.List[t.Any]:
         prepared_outputs: t.List[t.Any] = []
         if reply.output_keys:
@@ -287,6 +296,7 @@ class MachineLearningWorkerCore:
         return prepared_outputs
 
     @staticmethod
+    @profile
     def fetch_model(
         batch: RequestBatch, feature_stores: t.Dict[str, FeatureStore]
     ) -> FetchModelResult:
@@ -318,6 +328,7 @@ class MachineLearningWorkerCore:
             raise SmartSimError(f"Model could not be retrieved with key {key}") from ex
 
     @staticmethod
+    @profile
     def fetch_inputs(
         batch: RequestBatch, feature_stores: t.Dict[str, FeatureStore]
     ) -> t.List[FetchInputResult]:
@@ -360,6 +371,7 @@ class MachineLearningWorkerCore:
         return fetch_results
 
     @staticmethod
+    @profile
     def place_output(
         request: InferenceRequest,
         transform_result: TransformOutputResult,

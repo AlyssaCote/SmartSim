@@ -10,7 +10,7 @@ from smartsim.settings import DragonRunSettings
 import time
 import typing as t
 
-DEVICE = "gpu"
+DEVICE = "cpu"
 NUM_RANKS = 1
 NUM_WORKERS = 1
 filedir = os.path.dirname(__file__)
