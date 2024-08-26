@@ -1,0 +1,47 @@
+These come from channel.py, dragonchannel.py, and dragonfli.py
+
+channel.py had 0.0 MiB throughout
+init: 0.0 MiB
+send: not called
+recv: not called
+descritpor: not called
+
+dragonchannel.py
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/comm/channel/dragonchannel.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    51    977.3 MiB    977.3 MiB           1       @profile
+    52                                             def send(self, value: bytes) -> None:
+    53                                                 """Send a message throuh the underlying communication channel
+    54                                                 :param value: The value to send"""
+    55    981.2 MiB      0.0 MiB           2           with self._channel.sendh(timeout=None) as sendh:
+    56    981.2 MiB      3.9 MiB           1               sendh.send_bytes(value)
+
+init: 0.0 MiB
+from_descriptor: not called
+recv: not called
+
+dragonfli.py
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/comm/channel/dragonfli.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    69    489.9 MiB    489.9 MiB           1       @profile
+    70                                             def recv(self) -> t.List[bytes]:
+    71                                                 """Receieve a message through the underlying communication channel
+    72                                         
+    73                                                 :returns: the received message"""
+    74    489.9 MiB      0.0 MiB           1           messages = []
+    75    489.9 MiB      0.0 MiB           1           eot = False
+    76    526.6 MiB      0.0 MiB           2           with self._fli.recvh(timeout=0.001) as recvh:
+    77    526.6 MiB      0.0 MiB           4               while not eot:
+    78    526.6 MiB      0.0 MiB           3                   try:
+    79    526.6 MiB     73.6 MiB           3                       message, _ = recvh.recv_bytes(timeout=None) #ALERT but we know about this
+    80    526.6 MiB      0.0 MiB           2                       messages.append(message)
+    81    526.6 MiB      0.0 MiB           1                   except fli.FLIEOT:
+    82    526.6 MiB      0.0 MiB           1                       eot = True
+    83    526.6 MiB      0.0 MiB           1           return messages
+
+init: 0.0 MiB
+from_descriptor: 0.0 MiB

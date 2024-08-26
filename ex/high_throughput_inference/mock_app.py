@@ -42,6 +42,8 @@ import os
 import time
 import torch
 
+from memory_profiler import profile
+
 from mpi4py import MPI
 from smartsim._core.mli.infrastructure.storage.dragonfeaturestore import (
     DragonFeatureStore,
@@ -58,6 +60,7 @@ logger = get_logger("App")
 CHECK_RESULTS_AND_MAKE_ALL_SLOWER = False
 
 class ProtoClient:
+    # @profile
     def __init__(self, timing_on: bool):
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
@@ -78,6 +81,7 @@ class ProtoClient:
 
         self.perf_timer: PerfTimer = PerfTimer(debug=False, timing_on=timing_on, prefix=f"a{rank}_")
 
+    @profile
     def run_model(self, model: bytes | str, batch: torch.Tensor):
         tensors = [batch.numpy()]
         self.perf_timer.start_timings("batch_size", batch.shape[0])
@@ -100,7 +104,7 @@ class ProtoClient:
         self.perf_timer.measure_time("build_request")
         request_bytes = MessageHandler.serialize_request(request)
         self.perf_timer.measure_time("serialize_request")
-        tensor_bytes = [bytes(tensor.data) for tensor in tensors]
+        tensor_bytes = [tensor.tobytes() for tensor in tensors]
         # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
         self.perf_timer.measure_time("serialize_tensor")
         with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
@@ -129,12 +133,14 @@ class ProtoClient:
         self.perf_timer.end_timings()
         return result
 
+    # @profile
     def set_model(self, key: str, model: bytes):
         self._ddict[key] = model
 
 
 
 class ResNetWrapper:
+    # @profile
     def __init__(self, name: str, model: str):
         self._model = torch.jit.load(model)
         self._name = name
@@ -143,14 +149,17 @@ class ResNetWrapper:
         torch.jit.save(scripted, buffer)
         self._serialized_model = buffer.getvalue()
 
+    # @profile
     def get_batch(self, batch_size: int = 32):
         return torch.randn((batch_size, 3, 224, 224), dtype=torch.float32)
 
     @property
+    # @profile
     def model(self):
         return self._serialized_model
 
     @property
+    # @profile
     def name(self):
         return self._name
 
@@ -171,7 +180,7 @@ if __name__ == "__main__":
         torch_device = args.device.replace("gpu", "cuda")
         pt_model = torch.jit.load(io.BytesIO(initial_bytes=(resnet.model))).to(torch_device)
 
-    TOTAL_ITERATIONS = 100
+    TOTAL_ITERATIONS = 1
 
     for log2_bsize in range(args.log_max_batchsize+1):
         b_size: int = 2**log2_bsize

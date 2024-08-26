@@ -31,6 +31,8 @@ import typing as t
 import smartsim._core.mli.comm.channel.channel as cch
 from smartsim.log import get_logger
 
+# from memory_profiler import profile
+
 logger = get_logger(__name__)
 
 import dragon.channels as dch
@@ -39,17 +41,21 @@ import dragon.channels as dch
 class DragonCommChannel(cch.CommChannelBase):
     """Passes messages by writing to a Dragon channel"""
 
+
+    # @profile
     def __init__(self, key: bytes) -> None:
         """Initialize the DragonCommChannel instance"""
         super().__init__(key)
         self._channel: dch.Channel = dch.Channel.attach(key)
 
+    # @profile
     def send(self, value: bytes) -> None:
         """Send a message throuh the underlying communication channel
         :param value: The value to send"""
         with self._channel.sendh(timeout=None) as sendh:
             sendh.send_bytes(value)
 
+    # @profile
     def recv(self) -> t.List[bytes]:
         """Receieve a message through the underlying communication channel
 
@@ -59,6 +65,7 @@ class DragonCommChannel(cch.CommChannelBase):
             return [message_bytes]
 
     @classmethod
+    # @profile
     def from_descriptor(
         cls,
         descriptor: str,

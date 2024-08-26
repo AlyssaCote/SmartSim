@@ -36,12 +36,15 @@ from smartsim._core.mli.infrastructure.storage.featurestore import FeatureStore
 from smartsim.error import SmartSimError
 from smartsim.log import get_logger
 
+# from memory_profiler import profile
+
 logger = get_logger(__name__)
 
 
 class DragonFeatureStore(FeatureStore):
     """A feature store backed by a dragon distributed dictionary"""
 
+    # @profile
     def __init__(self, storage: "dragon_ddict.DDict") -> None:
         """Initialize the DragonFeatureStore instance
 
@@ -49,6 +52,7 @@ class DragonFeatureStore(FeatureStore):
         storage mechanism of the feature store"""
         self._storage = storage
 
+    # @profile
     def __getitem__(self, key: str) -> t.Union[str, bytes]:
         """Retrieve an item using key
 
@@ -68,6 +72,7 @@ class DragonFeatureStore(FeatureStore):
                 f"Could not get value for existing key {key}, error:\n{ex}"
             ) from ex
 
+    # @profile
     def __setitem__(self, key: str, value: t.Union[str, bytes]) -> None:
         """Assign a value using key
 
@@ -75,6 +80,7 @@ class DragonFeatureStore(FeatureStore):
         :param value: Value to persist in the feature store"""
         self._storage[key] = value
 
+    # @profile
     def __contains__(self, key: str) -> bool:
         """Membership operator to test for a key existing within the feature store.
 
@@ -83,6 +89,7 @@ class DragonFeatureStore(FeatureStore):
         return key in self._storage
 
     @property
+    # @profile
     def descriptor(self) -> str:
         """A unique identifier enabling a client to connect to the feature store
 
@@ -90,6 +97,7 @@ class DragonFeatureStore(FeatureStore):
         return str(self._storage.serialize())
 
     @classmethod
+    # @profile
     def from_descriptor(
         cls,
         descriptor: str,

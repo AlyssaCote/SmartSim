@@ -58,6 +58,8 @@ from ...infrastructure.worker.worker import (
 )
 from .commons import exception_handler
 
+# from memory_profiler import profile
+
 if t.TYPE_CHECKING:
     from smartsim._core.mli.mli_schemas.response.response_capnp import Status
 
@@ -68,6 +70,8 @@ ModelIdentifier = FeatureStoreKey
 
 
 class WorkerDevice:
+
+    # @profile
     def __init__(self, name: str) -> None:
         """Wrapper around a device to keep track of loaded Models and availability
         :param name: name used by the toolkit to identify this device, e.g. ``cuda:0``
@@ -79,6 +83,7 @@ class WorkerDevice:
         self._lock = RLock()
         """Lock to ensure only one thread at the time accesses this device"""
 
+    # @profile
     def acquire(self, blocking: bool = True, timeout: float = -1) -> t.Optional[bool]:
         """Acquire and lock this device to prevent other threads
 
@@ -91,14 +96,17 @@ class WorkerDevice:
         """
         return self._lock.acquire(blocking=blocking, timeout=timeout)
 
+    # @profile
     def release(self) -> None:
         """Release device to allow other threads to acquire it"""
         self._lock.release()
 
+    # @profile
     def __enter__(self) -> None:
         """Locked context creator for this device"""
         self.acquire()
 
+    # @profile
     def __exit__(
         self,
         exc_type: t.Optional[t.Type[BaseException]],
@@ -110,6 +118,7 @@ class WorkerDevice:
 
 
 class BatchQueue(Queue[InferenceRequest]):
+    # @profile
     def __init__(
         self, batch_timeout: float, batch_size: int, model_key: ModelIdentifier
     ) -> None:
@@ -140,10 +149,12 @@ class BatchQueue(Queue[InferenceRequest]):
         """Unique ID of queue"""
 
     @property
+    # @profile
     def uid(self) -> str:
         """ID of this queue"""
         return self._uid
 
+    # @profile
     def acquire(self, blocking: bool = True, timeout: float = -1) -> t.Optional[bool]:
         """Acquire queue lock to flush
         :param blocking: whether to block on lock acquisition
@@ -151,14 +162,17 @@ class BatchQueue(Queue[InferenceRequest]):
         """
         return self._flush_lock.acquire(blocking=blocking, timeout=timeout)
 
+    # @profile
     def release(self) -> None:
         """Release queue lock"""
         self._flush_lock.release()
 
+    # @profile
     def __enter__(self) -> None:
         """Method to use the Queue as a Context Manager"""
         self.acquire()
 
+    # @profile
     def __exit__(
         self,
         exc_type: t.Optional[t.Type[BaseException]],
@@ -169,10 +183,12 @@ class BatchQueue(Queue[InferenceRequest]):
         self.release()
 
     @property
+    # @profile
     def model_key(self) -> ModelIdentifier:
         """Key of the model which needs to be run on the queued requests"""
         return self._model_key
 
+    # @profile
     def put(
         self,
         item: InferenceRequest,
@@ -197,6 +213,7 @@ class BatchQueue(Queue[InferenceRequest]):
             self.release()
 
     @property
+    # @profile
     def _elapsed_time(self) -> float:
         """Time elapsed since the first item was put on this queue"""
         if self.empty() or self._first_put is None:
@@ -204,21 +221,25 @@ class BatchQueue(Queue[InferenceRequest]):
         return time.time() - self._first_put
 
     @property
+    # @profile
     def ready(self) -> bool:
         """True if the queue can be flushed"""
         if self.empty():
             return False
         return self.full() or (self._elapsed_time >= self._batch_timeout)
 
+    # @profile
     def make_disposable(self) -> None:
         """Set this queue as disposable, and never use it again after it gets flushed"""
         self._disposable = True
 
     @property
+    # @profile
     def can_be_removed(self) -> bool:
         """Whether this queue can be deleted and garbage collected"""
         return self.empty() and self._disposable
 
+    # @profile
     def flush(self) -> list[t.Any]:
         """Get all requests from queue
         :return: Requests waiting to be executed
@@ -234,6 +255,7 @@ class BatchQueue(Queue[InferenceRequest]):
 
         return items
 
+    # @profile
     def full(self) -> bool:
         """Return True if the queue has reached its maximum capacity"""
         if self._disposable:
@@ -242,12 +264,14 @@ class BatchQueue(Queue[InferenceRequest]):
             return False
         return self.qsize() >= self._batch_size
 
+    # @profile
     def empty(self) -> bool:
         """Return True if the queue has 0 elements"""
         return self.qsize() == 0
 
 
 class RequestDispatcher(Service):
+    # @profile
     def __init__(
         self,
         batch_timeout: float,
@@ -302,6 +326,7 @@ class RequestDispatcher(Service):
         self._perf_timer = PerfTimer(prefix="r_", debug=True, timing_on=True)
         """Performance timer"""
 
+    # @profile
     def _check_feature_stores(self, request: InferenceRequest) -> bool:
         """Ensures that all feature stores required by the request are available
 
@@ -335,6 +360,7 @@ class RequestDispatcher(Service):
         return True
 
     # pylint: disable-next=no-self-use
+    # @profile
     def _check_model(self, request: InferenceRequest) -> bool:
         """Ensure that a model is available for the request
 
@@ -348,6 +374,7 @@ class RequestDispatcher(Service):
         return False
 
     # pylint: disable-next=no-self-use
+    # @profile
     def _check_inputs(self, request: InferenceRequest) -> bool:
         """Ensure that inputs are available for the request
 
@@ -361,6 +388,7 @@ class RequestDispatcher(Service):
         return False
 
     # pylint: disable-next=no-self-use
+    # @profile
     def _check_callback(self, request: InferenceRequest) -> bool:
         """Ensure that a callback channel is available for the request
 
@@ -373,6 +401,7 @@ class RequestDispatcher(Service):
         logger.error("No callback channel provided in request")
         return False
 
+    # @profile
     def _validate_request(self, request: InferenceRequest) -> bool:
         """Ensure the request can be processed
 
@@ -387,9 +416,11 @@ class RequestDispatcher(Service):
 
         return all(checks)
 
+    # @profile
     def _on_start(self) -> None:
         self._queue_swap_lock = RLock()
 
+    # @profile
     def _on_iteration(self) -> None:
         try:
             self._perf_timer.set_active(True)
@@ -438,10 +469,12 @@ class RequestDispatcher(Service):
             self._perf_timer.print_timings(True)
 
     @property
+    # @profile
     def task_queue(self) -> DragonQueue:
         """The queue on which batched requests are placed"""
         return self._outgoing_queue
 
+    # @profile
     def _swap_queue(self, model_key: FeatureStoreKey) -> None:
         """Get an empty queue or create a new one
 
@@ -467,6 +500,7 @@ class RequestDispatcher(Service):
             self._active_queues[model_key.key] = new_queue
             return
 
+    # @profile
     def dispatch(self, request: InferenceRequest) -> None:
         """Assign a request to a batch queue
         :param request: the request to place
@@ -494,11 +528,12 @@ class RequestDispatcher(Service):
                 except (Full, KeyError):
                     self._swap_queue(request.model_key)
 
+    # @profile
     def flush_requests(self) -> None:
         """Get all requests from queues which are ready to be flushed. Place all
         avaliable request batches in the outgoing queue.
         """
-        print(self._queues.items())
+        # print(self._queues.items())
         for queue_list in self._queues.values():
             for queue in queue_list:
                 if queue.ready and queue.acquire(blocking=False):
@@ -547,5 +582,6 @@ class RequestDispatcher(Service):
                     self._outgoing_queue.put(batch)
                     self._perf_timer.measure_time("put")
 
+    # @profile
     def _can_shutdown(self) -> bool:
         return False

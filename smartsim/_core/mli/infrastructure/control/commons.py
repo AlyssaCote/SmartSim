@@ -30,13 +30,14 @@ from .....log import get_logger
 from ...comm.channel.channel import CommChannelBase
 from ...message_handler import MessageHandler
 from ...mli_schemas.response.response_capnp import ResponseBuilder
+# from memory_profiler import profile
 
 if t.TYPE_CHECKING:
     from smartsim._core.mli.mli_schemas.response.response_capnp import Status
 
 logger = get_logger(__file__)
 
-
+# @profile
 def build_failure_reply(status: "Status", message: str) -> ResponseBuilder:
     return MessageHandler.build_response(
         status=status,
@@ -45,7 +46,7 @@ def build_failure_reply(status: "Status", message: str) -> ResponseBuilder:
         custom_attributes=None,
     )
 
-
+# @profile
 def exception_handler(
     exc: Exception, reply_channel: t.Optional[CommChannelBase], failure_message: str
 ) -> None:

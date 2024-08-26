@@ -1,0 +1,271 @@
+from requestdispatcher.py
+
+WorkerDevice
+
+init: not called
+acquire: not called
+release: not called
+__enter__: not called
+__exit__: not called
+
+
+BatchQueue
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   223    383.4 MiB    383.4 MiB           1       @property
+   224                                             @profile
+   225                                             def ready(self) -> bool:
+   226                                                 """True if the queue can be flushed"""
+   227    383.4 MiB      0.0 MiB           1           if self.empty():
+   228                                                     return False
+   229    383.5 MiB      0.1 MiB           1           return self.full() or (self._elapsed_time >= self._batch_timeout)
+
+init: 0.0 MiB
+uid: not called
+acquire: 0.0 MiB
+release: 0.0 MiB
+__enter__: not called
+__exit__: not called
+model_key: 0.0 MiB
+put: 0.0 MiB
+_elapsed_time: 0.0 MiB
+make_disposable: not called
+can_be_removed: not called
+flush: 0.0 MiB
+full: 0.0 MiB
+empty: 0.0 MiB
+
+
+RequestDispatcher
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/control/requestdispatcher.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   274    376.6 MiB    376.6 MiB           1       @profile
+   275                                             def __init__(
+   276                                                 self,
+   277                                                 batch_timeout: float,
+   278                                                 batch_size: int,
+   279                                                 config_loader: EnvironmentConfigLoader,
+   280                                                 worker_type: t.Type[MachineLearningWorkerBase],
+   281                                             ) -> None:
+   282                                                 """The RequestDispatcher intercepts inference requests, stages them in
+   283                                                 queues and batches them together before making them available to Worker
+   284                                                 Managers.
+   285                                                 :param batch_timeout: Maximum elapsed time before flushing a complete or
+   286                                                 incomplete batch
+   287                                                 :param batch_size: Total capacity of each batch queue.
+   288                                                 :param mem_pool: Memory pool used to share batched input tensors with worker
+   289                                                 managers
+   290                                                 :param config_loader: Object to load configuration from environment
+   291                                                 :param worker_type: Type of worker to instantiate to batch inputs
+   292                                                 :raises SmartSimError: If config_loaded.get_queue() does not return a channel
+   293                                                 """
+   294    376.6 MiB      0.0 MiB           1           super().__init__(as_service=True, cooldown=1)
+   295    376.6 MiB      0.0 MiB           1           self._queues: dict[str, list[BatchQueue]] = {}
+   296    376.6 MiB      0.0 MiB           1           """Dict of all batch queues available for a given model key"""
+   297    376.6 MiB      0.0 MiB           1           self._active_queues: dict[str, BatchQueue] = {}
+   298    376.6 MiB      0.0 MiB           1           """Mapping telling which queue is the recipient of requests for a given model
+   299                                                 key"""
+   300    376.6 MiB      0.0 MiB           1           self._batch_timeout = batch_timeout
+   301    376.6 MiB      0.0 MiB           1           """Time in seconds that has to be waited before flushing a non-full queue"""
+   302    376.6 MiB      0.0 MiB           1           self._batch_size = batch_size
+   303    376.6 MiB      0.0 MiB           1           """Total capacity of each batch queue."""
+   304    376.6 MiB      0.0 MiB           1           self._queue_swap_lock: t.Optional[RLock] = None
+   305    376.6 MiB      0.0 MiB           1           """Lock used to swap the active queue for a key"""
+   306    376.7 MiB      0.2 MiB           1           incoming_channel = config_loader.get_queue()
+   307    376.7 MiB      0.0 MiB           1           if incoming_channel is None:
+   308                                                     raise SmartSimError("No incoming channel for dispatcher")
+   309    376.7 MiB      0.0 MiB           1           self._incoming_channel = incoming_channel
+   310    376.7 MiB      0.0 MiB           1           """The channel the dispatcher monitors for new tasks"""
+   311    377.2 MiB      0.4 MiB           1           self._outgoing_queue: DragonQueue = mp.Queue(maxsize=0)
+   312    377.2 MiB      0.0 MiB           1           """The queue on which batched inference requests are placed"""
+   313    377.2 MiB      0.0 MiB           1           self._feature_stores: t.Dict[str, FeatureStore] = {}
+   314    377.2 MiB      0.0 MiB           1           """A collection of attached feature stores"""
+   315    377.2 MiB      0.0 MiB           1           self._featurestore_factory = config_loader._featurestore_factory
+   316    377.2 MiB      0.0 MiB           1           """A factory method to create a desired feature store client type"""
+   317    377.8 MiB      0.6 MiB           1           self._backbone: t.Optional[FeatureStore] = config_loader.get_backbone()
+   318    377.8 MiB      0.0 MiB           1           """A standalone, system-created feature store used to share internal
+   319                                                 information among MLI components"""
+   320    377.8 MiB      0.0 MiB           1           self._callback_factory = config_loader._callback_factory
+   321    377.8 MiB      0.0 MiB           1           """The type of communication channel to construct for callbacks"""
+   322    377.8 MiB      0.0 MiB           1           self._worker = worker_type()
+   323    377.8 MiB      0.0 MiB           1           """The worker used to batch inputs"""
+   324    377.8 MiB      0.0 MiB           1           self._mem_pool = MemoryPool.attach(dragon_gs_pool.create(2 * 1024**3).sdesc)
+   325    377.8 MiB      0.0 MiB           1           """Memory pool used to share batched input tensors with the Worker Managers"""
+   326    377.8 MiB      0.0 MiB           1           self._perf_timer = PerfTimer(prefix="r_", debug=True, timing_on=True)
+   327    377.8 MiB      0.0 MiB           1           """Performance timer"""
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   329    377.6 MiB    377.6 MiB           1       @profile
+   330                                             def _check_feature_stores(self, request: InferenceRequest) -> bool:
+   331                                                 """Ensures that all feature stores required by the request are available
+   332                                         
+   333                                                 :param request: The request to validate
+   334                                                 :returns: False if feature store validation fails for the request, True
+   335                                                 otherwise
+   336                                                 """
+   337                                                 # collect all feature stores required by the request
+   338    377.6 MiB      0.0 MiB           1           fs_model: t.Set[str] = set()
+   339    377.6 MiB      0.0 MiB           1           if request.model_key:
+   340    377.6 MiB      0.0 MiB           1               fs_model = {request.model_key.descriptor}
+   341    377.6 MiB      0.0 MiB           3           fs_inputs = {key.descriptor for key in request.input_keys}
+   342    377.6 MiB      0.0 MiB           3           fs_outputs = {key.descriptor for key in request.output_keys}
+   343                                         
+   344                                                 # identify which feature stores are requested and unknown
+   345    377.6 MiB      0.0 MiB           1           fs_desired = fs_model.union(fs_inputs).union(fs_outputs)
+   346    377.6 MiB      0.0 MiB           3           fs_actual = {item.descriptor for item in self._feature_stores.values()}
+   347    377.6 MiB      0.0 MiB           1           fs_missing = fs_desired - fs_actual
+   348                                         
+   349    377.6 MiB      0.0 MiB           1           if self._featurestore_factory is None:
+   350                                                     logger.error("No feature store factory configured")
+   351                                                     return False
+   352                                         
+   353                                                 # create the feature stores we need to service request
+   354    377.6 MiB      0.0 MiB           1           if fs_missing:
+   355    377.6 MiB      0.0 MiB           1               logger.debug(f"Adding feature store(s): {fs_missing}")
+   356    378.9 MiB      0.0 MiB           2               for descriptor in fs_missing:
+   357    378.9 MiB      1.3 MiB           1                   feature_store = self._featurestore_factory(descriptor)
+   358    378.9 MiB      0.0 MiB           1                   self._feature_stores[descriptor] = feature_store
+   359                                         
+   360      8.9 MiB      0.0 MiB           1           return True
+
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   404    377.6 MiB    377.6 MiB           1       @profile
+   405                                             def _validate_request(self, request: InferenceRequest) -> bool:
+   406                                                 """Ensure the request can be processed
+   407                                         
+   408                                                 :param request: The request to validate
+   409                                                 :return: False if the request fails any validation checks, True otherwise"""
+   410    378.9 MiB      0.0 MiB           1           checks = [
+   411    378.9 MiB      1.3 MiB           1               self._check_feature_stores(request),
+   412    378.9 MiB      0.0 MiB           1               self._check_model(request),
+   413    378.9 MiB      0.0 MiB           1               self._check_inputs(request),
+   414    378.9 MiB      0.0 MiB           1               self._check_callback(request),
+   415                                                 ]
+   416                                         
+   417    378.9 MiB      0.0 MiB           1           return all(checks)
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   423    432.0 MiB    432.0 MiB           1       @profile
+   424                                             def _on_iteration(self) -> None:
+   425    432.0 MiB      0.0 MiB           1           try:
+   426    432.0 MiB      0.0 MiB           1               self._perf_timer.set_active(True)
+   427    505.6 MiB     73.6 MiB           1               bytes_list: t.List[bytes] = self._incoming_channel.recv()
+   428                                                 except Exception:
+   429                                                     self._perf_timer.set_active(False)
+   430                                                 else:
+   431    505.6 MiB      0.0 MiB           1               if not bytes_list:
+   432                                                         exception_handler(
+   433                                                             ValueError("No request data found"),
+   434                                                             None,
+   435                                                             "No request data found.",
+   436                                                         )
+   437                                         
+   438    505.6 MiB      0.0 MiB           1               request_bytes = bytes_list[0]
+   439    505.6 MiB      0.0 MiB           1               tensor_bytes_list = bytes_list[1:]
+   440    505.6 MiB      0.0 MiB           1               self._perf_timer.start_timings()
+   441                                         
+   442    505.6 MiB      0.0 MiB           2               request = self._worker.deserialize_message(
+   443    505.6 MiB      0.0 MiB           1                   request_bytes, self._callback_factory
+   444                                                     )
+   445    505.6 MiB      0.0 MiB           1               if request.input_meta and tensor_bytes_list:
+   446    505.6 MiB      0.0 MiB           1                   request.raw_inputs = tensor_bytes_list
+   447                                         
+   448    505.6 MiB      0.0 MiB           1               self._perf_timer.measure_time("deserialize_message")
+   449                                         
+   450    505.6 MiB      0.0 MiB           1               if not self._validate_request(request):
+   451                                                         exception_handler(
+   452                                                             ValueError("Error validating the request"),
+   453                                                             request.callback,
+   454                                                             "Error validating the request.",
+   455                                                         )
+   456                                                         self._perf_timer.measure_time("validate_request")
+   457                                                     else:
+   458    505.6 MiB      0.0 MiB           1                   self._perf_timer.measure_time("validate_request")
+   459    505.6 MiB      0.0 MiB           1                   self.dispatch(request)
+   460    505.6 MiB      0.0 MiB           1                   self._perf_timer.measure_time("dispatch")
+   461                                                 finally:
+   462    523.9 MiB     18.3 MiB           1               self.flush_requests()
+   463                                                     # TODO: implement this
+   464                                                     # self.remove_queues()
+   465                                         
+   466    523.9 MiB      0.0 MiB           1               self._perf_timer.end_timings()
+   467                                         
+   468    523.9 MiB      0.0 MiB           1           if self._perf_timer.max_length == 801 and self._perf_timer.is_active:
+   469                                                     self._perf_timer.print_timings(True)
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   531    505.6 MiB    505.6 MiB           1       @profile
+   532                                             def flush_requests(self) -> None:
+   533                                                 """Get all requests from queues which are ready to be flushed. Place all
+   534                                                 avaliable request batches in the outgoing queue.
+   535                                                 """
+   536                                                 # print(self._queues.items())
+   537    523.9 MiB      0.0 MiB           2           for queue_list in self._queues.values():
+   538    523.9 MiB      0.0 MiB           2               for queue in queue_list:
+   539    505.6 MiB      0.0 MiB           1                   if queue.ready and queue.acquire(blocking=False):
+   540    505.6 MiB      0.0 MiB           1                       self._perf_timer.measure_time("find_queue")
+   541    505.6 MiB      0.0 MiB           1                       try:
+   542    505.6 MiB      0.0 MiB           2                           batch = RequestBatch(
+   543    505.6 MiB      0.0 MiB           1                               requests=queue.flush(),
+   544    505.6 MiB      0.0 MiB           1                               inputs=None,
+   545    505.6 MiB      0.0 MiB           1                               model_key=queue.model_key,
+   546                                                                 )
+   547                                                             finally:
+   548    505.6 MiB      0.0 MiB           1                           self._perf_timer.measure_time("flush_requests")
+   549    505.6 MiB      0.0 MiB           1                           queue.release()
+   550    505.6 MiB      0.0 MiB           1                       try:
+   551    505.6 MiB      0.0 MiB           2                           fetch_results = self._worker.fetch_inputs(
+   552    505.6 MiB      0.0 MiB           1                               batch=batch, feature_stores=self._feature_stores
+   553                                                                 )
+   554                                                             except Exception as exc:
+   555                                                                 exception_handler(
+   556                                                                     exc,
+   557                                                                     None,
+   558                                                                     "Error fetching input.",
+   559                                                                 )
+   560                                                                 continue
+   561    505.6 MiB      0.0 MiB           1                       self._perf_timer.measure_time("fetch_input")
+   562    505.6 MiB      0.0 MiB           1                       try:
+   563    523.9 MiB     18.3 MiB           2                           transformed_inputs = self._worker.transform_input( #ALERT?
+   564    505.6 MiB      0.0 MiB           1                               batch=batch,
+   565    505.6 MiB      0.0 MiB           1                               fetch_results=fetch_results,
+   566    505.6 MiB      0.0 MiB           1                               mem_pool=self._mem_pool,
+   567                                                                 )
+   568                                                             except Exception as exc:
+   569                                                                 exception_handler(
+   570                                                                     exc,
+   571                                                                     None,
+   572                                                                     "Error Transforming input.",
+   573                                                                 )
+   574                                                                 continue
+   575                                         
+   576    523.9 MiB      0.0 MiB           1                       self._perf_timer.measure_time("transform_input")
+   577    523.9 MiB      0.0 MiB           1                       batch.inputs = transformed_inputs
+   578    523.9 MiB      0.0 MiB           2                       for request in batch.requests:
+   579    523.9 MiB      0.0 MiB           1                           request.raw_inputs = []
+   580    523.9 MiB      0.0 MiB           1                           request.input_meta = []
+   581                                         
+   582    523.9 MiB      0.0 MiB           1                       self._outgoing_queue.put(batch)
+   583    523.9 MiB      0.0 MiB           1                       self._perf_timer.measure_time("put")
+
+_check_model: 0.0 MiB
+_check_inputs: 0.0 MiB
+_check_callback: 0.0 MiB
+_on_start: 0.0 MiB
+task_queue: 0.0 MiB
+_swap_queue: 0.0 MiB
+dispatch: 0.0 MiB
+_can_shutdown: 0.0 MiB
+

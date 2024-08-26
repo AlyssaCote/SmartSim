@@ -1,0 +1,107 @@
+{
+  "schema info": {
+    "schema_name": "entity manifest",
+    "version": "0.0.4"
+  },
+  "experiment": {
+    "name": "MLI_proto",
+    "path": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA",
+    "launcher": "Dragon",
+    "out_file": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/logs/smartsim.out",
+    "err_file": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/logs/smartsim.err"
+  },
+  "runs": [
+    {
+      "run_id": "44f33bd",
+      "timestamp": 1724447616178205637,
+      "model": [
+        {
+          "name": "worker_manager",
+          "path": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/worker_manager",
+          "exe_args": [
+            "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/standalone_workermanager.py",
+            "--device",
+            "gpu",
+            "--worker_class",
+            "gAWVSQAAAAAAAACMNXNtYXJ0c2ltLl9jb3JlLm1saS5pbmZyYXN0cnVjdHVyZS53b3JrZXIudG9yY2hfd29ya2VylIwLVG9yY2hXb3JrZXKUk5Qu",
+            "--batch_size",
+            "4",
+            "--batch_timeout",
+            "0.0",
+            "--num_workers",
+            "1"
+          ],
+          "run_settings": {
+            "exe": [
+              "/lus/scratch/cote/local/pyenv/versions/3.11.9/envs/d311/bin/python"
+            ],
+            "run_command": null,
+            "run_args": {
+              "cpu-affinity": ""
+            }
+          },
+          "batch_settings": {},
+          "params": {},
+          "files": {
+            "Symlink": [],
+            "Configure": [],
+            "Copy": [
+              "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/standalone_workermanager.py"
+            ]
+          },
+          "colocated_db": {},
+          "telemetry_metadata": {
+            "status_dir": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/MLI_proto/44f33bd/model/worker_manager",
+            "step_id": "248048d-0",
+            "task_id": null,
+            "managed": true
+          },
+          "out_file": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/MLI_proto/44f33bd/model/worker_manager/worker_manager.out",
+          "err_file": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/MLI_proto/44f33bd/model/worker_manager/worker_manager.err"
+        },
+        {
+          "name": "app",
+          "path": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/app",
+          "exe_args": [
+            "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py",
+            "--device",
+            "gpu",
+            "--log_max_batchsize",
+            "6"
+          ],
+          "run_settings": {
+            "exe": [
+              "/lus/scratch/cote/local/pyenv/versions/3.11.9/envs/d311/bin/python"
+            ],
+            "run_command": null,
+            "run_args": {
+              "tasks-per-node": 4
+            }
+          },
+          "batch_settings": {},
+          "params": {},
+          "files": {
+            "Symlink": [
+              "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/resnet50.gpu.pt"
+            ],
+            "Configure": [],
+            "Copy": [
+              "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py"
+            ]
+          },
+          "colocated_db": {},
+          "telemetry_metadata": {
+            "status_dir": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/MLI_proto/44f33bd/model/app",
+            "step_id": "5b47361-1",
+            "task_id": null,
+            "managed": true
+          },
+          "out_file": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/MLI_proto/44f33bd/model/app/app.out",
+          "err_file": "/lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/MLI_proto_HSTA/.smartsim/telemetry/MLI_proto/44f33bd/model/app/app.err"
+        }
+      ],
+      "orchestrator": [],
+      "ensemble": []
+    }
+  ]
+}

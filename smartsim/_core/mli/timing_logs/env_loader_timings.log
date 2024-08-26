@@ -1,0 +1,53 @@
+This comes form environmentloader.py
+
+EnvironmentConfigLoader
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/environmentloader.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    93    375.4 MiB    375.4 MiB           1       @profile
+    94                                             def get_queue(self) -> t.Optional[CommChannelBase]:
+    95                                                 """Attach to a queue-like communication channel using the descriptor
+    96                                                 found in an environment variable.
+    97                                         
+    98                                                 :returns: The attached queue specified via `_SMARTSIM_REQUEST_QUEUE`"""
+    99    375.4 MiB      0.0 MiB           1           descriptor = os.getenv("_SMARTSIM_REQUEST_QUEUE", "")
+   100                                         
+   101    375.4 MiB      0.0 MiB           1           if not descriptor:
+   102                                                     logger.warning("No queue descriptor is configured")
+   103                                                     return None
+   104                                         
+   105    375.4 MiB      0.0 MiB           1           if self._queue_factory is None:
+   106                                                     logger.warning("No queue factory is configured")
+   107                                                     return None
+   108                                         
+   109    375.4 MiB      0.1 MiB           1           self.queue = self._queue_factory(descriptor)
+   110    375.4 MiB      0.0 MiB           1           return self.queue
+
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/environmentloader.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    73    375.9 MiB    375.9 MiB           1       @profile
+    74                                             def get_backbone(self) -> t.Optional[FeatureStore]:
+    75                                                 """Attach to the backbone feature store using the descriptor found in
+    76                                                 an environment variable. The backbone is a standalone, system-created
+    77                                                 feature store used to share internal information among MLI components
+    78                                         
+    79                                                 :returns: The attached feature store via _SMARTSIM_INFRA_BACKBONE"""
+    80    375.9 MiB      0.0 MiB           1           descriptor = os.getenv("_SMARTSIM_INFRA_BACKBONE", "")
+    81                                         
+    82    375.9 MiB      0.0 MiB           1           if not descriptor:
+    83                                                     logger.warning("No backbone descriptor is configured")
+    84                                                     return None
+    85                                         
+    86    375.9 MiB      0.0 MiB           1           if self._featurestore_factory is None:
+    87                                                     logger.warning("No feature store factory is configured")
+    88                                                     return None
+    89                                         
+    90    376.4 MiB      0.6 MiB           1           self.backbone = self._featurestore_factory(descriptor)
+    91    376.4 MiB      0.0 MiB           1           return self.backbone
+
+init: 0.0 MiB

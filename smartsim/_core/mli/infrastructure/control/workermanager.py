@@ -54,6 +54,8 @@ from ...message_handler import MessageHandler
 from .commons import build_failure_reply, exception_handler
 from .devicemanager import DeviceManager, WorkerDevice
 
+# from memory_profiler import profile
+
 if t.TYPE_CHECKING:
     from smartsim._core.mli.mli_schemas.response.response_capnp import Status
 
@@ -64,6 +66,7 @@ class WorkerManager(Service):
     """An implementation of a service managing distribution of tasks to
     machine learning workers"""
 
+    # @profile
     def __init__(
         self,
         config_loader: EnvironmentConfigLoader,
@@ -110,9 +113,11 @@ class WorkerManager(Service):
         self._perf_timer = PerfTimer(prefix="w_", debug=True, timing_on=True)
         """Performance timer"""
 
+    # @profile
     def _on_start(self) -> None:
         self._device_manager = DeviceManager(WorkerDevice(self._device))
 
+    # @profile
     def _check_feature_stores(self, batch: RequestBatch) -> bool:
         """Ensures that all feature stores required by the request are available
 
@@ -144,6 +149,7 @@ class WorkerManager(Service):
 
         return True
 
+    # @profile
     def _validate_batch(self, batch: RequestBatch) -> bool:
         """Ensure the request can be processed
 
@@ -157,6 +163,7 @@ class WorkerManager(Service):
 
     # remove this when we are done with time measurements
     # pylint: disable-next=too-many-statements
+    # @profile
     def _on_iteration(self) -> None:
         """Executes calls to the machine learning worker implementation to complete
 
@@ -298,6 +305,7 @@ class WorkerManager(Service):
         if self._perf_timer.max_length == 801:
             self._perf_timer.print_timings(True)
 
+    # @profile
     def _can_shutdown(self) -> bool:
         """Return true when the criteria to shut down the service are met."""
         # todo: determine shutdown criteria

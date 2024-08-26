@@ -1,0 +1,61 @@
+These come from featurestore.py and dragonfeaturestore.py
+
+FeatureStore
+
+__getitem__: not called
+__setitem__: not called
+__contains__: not called
+descriptor: not called
+
+dragonfeaturestore
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/storage/dragonfeaturestore.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    55    377.1 MiB    377.1 MiB           1       @profile
+    56                                             def __getitem__(self, key: str) -> t.Union[str, bytes]:
+    57                                                 """Retrieve an item using key
+    58                                         
+    59                                                 :param key: Unique key of an item to retrieve from the feature store
+    60                                                 :returns: The value identified by the supplied key
+    61                                                 :raises KeyError: if the key is not found in the feature store
+    62                                                 :raises SmartSimError: if retrieval from the feature store fails"""
+    63    377.1 MiB      0.0 MiB           1           try:
+    64    671.3 MiB    294.2 MiB           1               value: t.Union[str, bytes] = self._storage[key] #ALERT
+    65    671.3 MiB      0.0 MiB           1               return value
+    66                                                 except KeyError:
+    67                                                     logger.warning(f"An unknown key was requested: {key}")
+    68                                                     raise
+    69                                                 except Exception as ex:
+    70                                                     # note: explicitly avoid round-trip to check for key existence
+    71                                                     raise SmartSimError(
+    72                                                         f"Could not get value for existing key {key}, error:\n{ex}"
+    73                                                     ) from ex
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/storage/dragonfeaturestore.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    99    375.8 MiB    375.8 MiB           1       @classmethod
+   100                                             @profile
+   101                                             def from_descriptor(
+   102                                                 cls,
+   103                                                 descriptor: str,
+   104                                             ) -> "DragonFeatureStore":
+   105                                                 """A factory method that creates an instance from a descriptor string
+   106                                         
+   107                                                 :param descriptor: The descriptor that uniquely identifies the resource
+   108                                                 :returns: An attached DragonFeatureStore
+   109                                                 :raises SmartSimError: if attachment to DragonFeatureStore fails"""
+   110    375.8 MiB      0.0 MiB           1           try:
+   111    376.4 MiB      0.6 MiB           1               return DragonFeatureStore(dragon_ddict.DDict.attach(descriptor))
+   112                                                 except Exception as ex:
+   113                                                     logger.error(f"Error creating dragon feature store: {descriptor}")
+   114                                                     raise SmartSimError(
+   115                                                         f"Error creating dragon feature store: {descriptor}"
+   116                                                     ) from ex
+init: 0.0 MiB
+__setitem__: not called
+__contains__: not called
+descriptor: 0 MiB

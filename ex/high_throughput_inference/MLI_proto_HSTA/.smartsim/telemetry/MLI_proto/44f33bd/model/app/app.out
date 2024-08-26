@@ -1,0 +1,1920 @@
+16:14:00 pinoak0034 SmartSim[141165:MainThread] INFO Batch size: 1
+16:14:00 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+16:14:00 pinoak0034 SmartSim[141168:MainThread] INFO Batch size: 1
+16:14:00 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+16:14:00 pinoak0034 SmartSim[141167:MainThread] INFO Batch size: 1
+16:14:00 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 0
+16:14:00 pinoak0034 SmartSim[141166:MainThread] INFO Batch size: 1
+16:14:00 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    773.4 MiB    773.4 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    773.4 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    773.4 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    773.4 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    773.4 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    773.4 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    773.4 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    773.4 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    773.4 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    773.4 MiB      0.0 MiB           1               model=model_arg,
+    99    773.4 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    773.4 MiB      0.0 MiB           1               outputs=[],
+   101    773.4 MiB      0.0 MiB           1               output_descriptors=[],
+   102    773.4 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    773.4 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    773.4 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    774.2 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    773.4 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    774.2 Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    773.4 MiB    773.4 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    773.4 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    773.4 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    773.4 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    773.4 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    773.4 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    773.4 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    773.4 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    773.4 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    773.4 MiB      0.0 MiB           1               model=model_arg,
+    99    773.4 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    773.4 MiB      0.0 MiB           1               outputs=[],
+   101    773.4 MiB      0.0 MiB           1               output_descriptors=[],
+   102    773.4 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    773.4 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    773.4 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    773.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    773.9 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    773.4 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    773.9 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    773.9 MiB      0.5 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    773.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.2 MiB      0.3 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.2 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    774.2 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    774.2 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.2 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    774.2 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    774.2 MiB      0.0 MiB           1                       data_blob,
+   128    774.2 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.2 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.2 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO total_time: 3.9123e+00
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 1
+MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    774.2 MiB      0.7 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.2 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.2 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    774.2 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    774.2 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.2 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    774.2 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    774.2 MiB      0.0 MiB           1                       data_blob,
+   128    774.2 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.2 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.2 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 4.1309e+00
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 1
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    773.6 MiB    773.6 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    773.6 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    773.6 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    773.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    773.6 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    773.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    773.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    773.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    773.6 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    773.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    773.6 MiB      0.0 MiB           1               model=model_arg,
+    99    773.6 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    773.6 MiB      0.0 MiB           1               outputs=[],
+   101    773.6 MiB      0.0 MiB           1               output_descriptors=[],
+   102    773.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    773.6 MiB      0.0 MFilename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    774.2 MiB    774.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    774.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.2 MiBFilename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    773.2 MiB    773.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    773.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    773.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    773.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    773.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    773.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    773.2 MiB      0.0 MiB           1           if isinstanciB           1           self.perf_timer.measure_time("build_request")
+   105    773.6 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    773.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    773.6 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    773.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    774.2 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    773.6 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    774.2 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    774.2 MiB      0.6 MiB           1                   0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    774.2 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    774.2 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    774.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    774.2 MiB      0.0 MiB           1               mode(model, str):
+    93    773.2 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    773.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    773.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    773.2 MiB      0.0 MiB           1               model=model_arg,
+    99    773.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    773.2 MiB      0.0 MiB           1               outputs=[],
+   101    773.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    773.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    773.2 MiB      0.0 Mel=model_arg,
+    99    774.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.2 MiB      0.0 MiB           1               outputs=[],
+   101    774.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    774.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    774.2 MiB      0.0 MFilename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    774.2 MiB    774.2 MiB           1       @profile
+    85                            to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.4 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.4 MiB      0.3 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    774.4 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    774.4 MiB      0.0 MiB                                 def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    774.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    774.2 MiB      0.0 MiB           1           if isinstanciB           1           self.perf_timer.measure_time("build_request")
+   105    774.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.2 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    774.2 MiB      0.0 MiB           1           self.peiB           1           self.perf_timer.measure_time("build_request")
+   105    773.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    773.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    773.2 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    773.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    773.7 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    773.2 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    773.7 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    773.7 MiB      0.5 MiB           1             e(model, str):
+    93    774.2 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    774.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    774.2 MiB      0.0 MiB           1               model=model_arg,
+    99    774.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.2 MiB      0.0 MiB           1               outputs=[],
+   101    774.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    774.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    774.2 MiB      0.0 M 1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.4 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    774.4 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    774.4 MiB      0.0 MiB           1                       data_blob,
+   128    774.4 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    774.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.4 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.4 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141166:MainThrf_timer.measure_time("serialize_tensor")
+   110    774.2 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.2 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    774.2 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    774.2 MiB      0.0 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.2 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.2 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time      to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    773.7 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.0 MiB      0.3 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.0 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    774.0 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    774.0 MiB      0.0 MiB          iB           1           self.perf_timer.measure_time("build_request")
+   105    774.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.2 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    774.8 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.2 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    774.8 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    774.8 MiB      0.6 MiB           1             read] INFO total_time: 3.9202e+00
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 1
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    774.4 MiB    774.4 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    774.4 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.4 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.4 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.4 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    774.4 MiB      0.0 MiB           1           self.perf_timer.measure("receive_response")
+   120    774.2 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    774.2 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.2 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    774.2 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    774.2 MiB      0.0 MiB           1                       data_blob,
+   128    774.2 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                     1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.0 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    774.0 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    774.0 MiB      0.0 MiB           1                       data_blob,
+   128    774.0 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    774.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.0 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.0 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141167:MainTh      to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    774.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.8 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.8 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.8 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    774.8 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.8 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    774.8 MiB      0.0 MiB          _time("build_tensor_descriptor")
+    92    774.4 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    774.4 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    774.4 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.4 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    774.4 MiB      0.0 MiB           1               model=model_arg,
+    99    774.4 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.4 MiB      0.0 MiB           1               outputs=[],
+   101    774.4 MiB      0.0 MiB           1               output_descriptors=[],
+   102    774.4 MiB      0.0 MiB           1               custom_attr     )
+   130                                                     )
+   131    774.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.2 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.2 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 2.4677e-01
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Batch size: 2
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    774.2 MiB    774.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    774.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    7read] INFO total_time: 4.0134e+00
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 1
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    774.0 MiB    774.0 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    774.0 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.0 MiB      0.0 MiB   1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.8 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.8 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    774.8 MiB      0.0 MiB             1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.0 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.0 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    774.0 MiB      0.0 MiB           1           self.perf_timer.measure       2                   numpy.frombuffer(
+   127    774.8 MiB      0.0 MiB           1                       data_blob,
+   128    774.8 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    774.8 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.8 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.8 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141168:MainThibutes=None,
+   103                                                 )
+   104    774.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    774.4 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.4 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(num74.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    774.2 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    774.2 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    774.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    774.2 MiB      0.0 MiB           1               model=model_arg,
+    99    774.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.2 MiB      0.0 MiB           1               outputs=[],
+   101    774.2 MiB      0.0 MiB           1               output_descriptors=[],
+   _time("build_tensor_descriptor")
+    92    774.0 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    774.0 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                           py.uint8).data for tensor in tensors]
+   109    774.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    775.0 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.4 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    775.0 MiB      0.0 MiB              else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    774.0 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.0 MiB      0.0 MiB           1               reply_charead] INFO total_time: 1.2974e-01
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Batch size: 2
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrencesnnel=self._from_worker_ch_serialized,
+    98    774.0 MiB      0.0 MiB           1               model=model_arg,
+    99    774.0 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.0 MiB      0.0 MiB           1               outputs=[],
+   101    774.0 MiB      0.0 MiB           1               output_descriptors=[],
+   102    774.0 MiB      0.0 MiB           1               custom_attr   Line Contents
+=============================================================
+    84    774.8 MiB    774.8 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    774.8 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.8 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.8 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.8 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    7   2               for tb in tensor_bytes:
+   113    775.0 MiB      0.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    775.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    775.0 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    775.0 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    775.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    775.0 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    775.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs102    774.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    774.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.2 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    774.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    775.6 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.2 MiB      0.0 MiB           1               to_sendhibutes=None,
+   103                                                 )
+   104    774.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    774.0 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.0 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(num74.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    774.8 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    774.8 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    774.8 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.8 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    774.8 MiB      0.0 MiB           1               model=model_arg,
+    99    774.8 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.8 MiB      0.0 MiB           1               outputs=[],
+   101    774.8 MiB      0.0 MiB           1               output_descriptors=[],
+   ? recv depending on the len(response.result.descriptors)?
+   123    775.0 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    775.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    775.0 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    775.0 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    775.0 MiB      0.0 MiB           1                       data_blob,
+   128    775.0 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    775.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    775.0 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    775.send_bytes(request_bytes)
+   112    775.6 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    775.6 MiB      1.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.sendpy.uint8).data for tensor in tensors]
+   109    774.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    774.6 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    774.6 MiB      0.0 MiB        _bytes(bytes(t.data))
+   115                                         
+   116    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    775.6 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    775.6 MiB      2               for tb in tensor_bytes:
+   113    774.6 MiB      0.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    774.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    774.6 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    774.6 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    774.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    774.6 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    774.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs   0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    775.6 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122      102    774.8 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    774.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    774.8 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.8 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                           .0 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO total_time: 1.2803e-01
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Batch size: 2
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    775.0 MiB    775.0 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    775.0 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    775.0 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    775.0 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    775.0 MiB      0.0 MiB           1               "c                      # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    774.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    775.9 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.8 MiB      0.0 MiB           1               to_sendh                                               # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    775.6 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    775.6 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    775.6 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    775.6 MiB      0.0 MiB           1                       data_blob,
+   128    ? recv depending on the len(response.result.descriptors)?
+   123    774.6 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    774.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    774.6 MiB   775.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    775.6 MiB      0.0 Mi   0.0 MiB           2               result = torch.from_numpy(
+   126    774.6 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    774.6 MiB      0.0 MiB           1                       data_blob,
+   128    774.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    774.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    774.6 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    774.send_bytes(request_bytes)
+   112    775.9 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    775.9 MiB      1.1 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    775.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    776.2 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    776.2 MiB   ", "float32", list(batch.shape)
+    90                                                 )
+    91    775.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    775.0 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    775.0 Mi   0.3 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    776.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    776.2 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    776.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122      B      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    775.0 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    775.0 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    775.0 MiB      0.0 MiB           1               model=model_arg,
+    99    775.0 MiBB           1           self.perf_timer.end_timings()
+   134    775.6 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 1.2455e-01
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Batch size: 4
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    775.6 MiB    775.6 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    775.6 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    775.6 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    775.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descri      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    775.0 MiB      0.0 MiB           1            .6 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO total_time: 1.8821e-01
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO Batch size: 2
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    774.6 MiB    774.6 MiB           1       @profile
+    85                                             def run_mo                                               # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    776.2 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    776.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    776.2 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    776.2 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    776.2 MiB      0.0 MiB           1                       data_blob,
+   128    776.2 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    776.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    776.2 MiB      0.0 Mi   outputs=[],
+   101    775.0 MiB      0.0 MiB           1               output_descriptors=[],
+   102    775.0 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    775.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    775.0 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    775.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    775.0 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    775.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    775.6 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=del(self, model: bytes | str, batch: torch.Tensor):
+    86    774.6 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    774.6 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    774.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    774.6 MiB      0.0 MiB           1               "cptor(
+    89    775.6 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    775.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    775.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    775.6 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    775.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    775.6 MiB      0.0 MiB           1               model=model_arg,
+    99    775.6 MiB      0.0 MiB           1               inputs=[built_ten", "float32", list(batch.shape)
+    90                                                 )
+    91    774.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    774.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    774.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.B           1           self.perf_timer.end_timings()
+   134    776.2 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO total_time: 1.3785e-01
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Batch size: 4
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    776.2 MiB    776.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    776.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    776.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    776.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descri0")
+    96    774.6 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    774.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    774.6 MiB      0.0 MiB           1               model=model_arg,
+    99    774.6 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    774.6 MiB      0.0 MiB           1            self._to_worker_ch) as to_sendh:
+   111    775.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    775.6 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    775.6 MiB      0.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    775.6 MiB      0.0 MiB      sor_desc],
+   100    775.6 MiB      0.0 MiB           1               outputs=[],
+   101    775.6 MiB      0.0 MiB           1               output_descriptors=[],
+   102    775.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    775.6 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    775.6 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    778.0 MiB      0.0 MiB           2       outputs=[],
+   101    774.6 MiB      0.0 MiB           1               output_descriptors=[],
+   102    774.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    774.6 MiB      0.0 MiB           1           self.per     2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    775.6 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    775.6 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    775.6 MiB     f_timer.measure_time("build_request")
+   105    774.6 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    774.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    774.6 MiB      0.0 MiB           4ptor(
+    89    776.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    776.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    776.2 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    776.2 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    776.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    776.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    776.2 MiB      0.0 MiB           1               model=model_arg,
+    99    776.2 MiB      0.0 MiB           1               inputs=[built_ten 0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    775.6 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    775.6 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    775.6 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    775.6 MiB      0.0 MiB           1                       data_blob,
+   128    775.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    775.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("       with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    775.6 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    778.0 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    778.0 MiB      2.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    778.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    778.0 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    778.0 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    778.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    778.0 MiB      0.0 MiB           1               response =           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    774.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    776.0 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    774.6 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    776.0 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    776.0 MiB      1.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    776.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    776.0 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    776.0 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    776.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    776.0 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    776.0 MiB     sor_desc],
+   100    776.2 MiB      0.0 MiB           1               outputs=[],
+   101    776.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    776.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    776.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    776.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    776.2 MiB      0.0 MiB           1           self.perf_timer.measure_timdeserialize_tensor")
+   132                                         
+   133    775.6 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    775.6 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO total_time: 1.2369e-01e("serialize_request")
+   107    776.2 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    776.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    778.3 MiB      0.0 MiB           2    
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Batch size: 4
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+================ MessageHandler.deserialize_response(resp)
+   121    778.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123  =============================================
+    84    775.6 MiB    775.6 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    775.6 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    775.6 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88     778.0 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    778.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    778.0 MiB      0.0 MiB           2               result = torch.from_numpy(
+   0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    776.0 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    776.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    776.0 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    776.0 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    776.0 MiB      0.0 MiB           1                       data_blob,
+   128    776.0 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    776.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("       with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    776.2 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    778.3 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    778.3 MiB     126    778.0 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    778.0 MiB      0.0 MiB           1                       data_blob,
+   128    778.0 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    778.0 MiB     2.2 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    778.3 MiB      0.0 MiB           1           self.per 775.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    775.6 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    775.6 MiB      0.0 MiB           1f_timer.measure_time("send")
+   117    778.6 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    778.3 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    778.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    778.3 MiB      0.0 MiB           1               response =           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    775.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    775.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94            0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    778.0 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    778.0 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 1.3237e-01
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Batch size: 8
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    778.0 MiB    778.0 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    778.0 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    778.0 MiB      0.0 MiB           1           sedeserialize_tensor")
+   132                                         
+   133    776.0 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    776.0 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO total_time: 1.6656e-01
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO Batch size: 4
+16:14:04 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    776.0 MiB    776.0 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    776.0 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    776.0 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    MessageHandler.deserialize_response(resp)
+   121    778.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123                                          else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    775.6 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    775.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    775.6 MiB      0.0 MiB           1          778.6 MiB      0.2 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    778.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    778.6 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    778.6 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    778.6 MiB      0.0 MiB           1                       data_blob,
+   128    778.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    778.6 MiB          model=model_arg,
+    99    775.6 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    775.6 MiB      0.0 MiB           1               outputs=[],
+   101    775.6 MiB      0.0 MiB           1               output_descriptors=[],
+   102    775.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    775.6 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    775.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    775.6 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    775.6 MiB      0.0 MiB           1        lf.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    778.0 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    778.0 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    778.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    778.0 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    778.0 MiB      0.0 MiB           1               model_arg = MessageHandle 776.0 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    776.0 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    776.0 MiB      0.0 MiB           1r.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    778.0 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    778.0 MiB      0.0 MiB           1               reply_channel=self._from_worker_           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    776.0 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    776.0 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    776.0 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    776.0 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    776.0 MiB      0.0 MiB           1           0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    778.6 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    778.6 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO total_time: 1.6543e-01
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Batch size: 8
+16:14:04 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    M   self.perf_timer.measure_time("serialize_tensor")
+   110    777.9 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    775.6 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    777.9 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    777.9 MiB      2.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    777.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    777.9 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    777.9 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    777.9 MiB      0.0 MiB           1               self.perf_timer.mech_serialized,
+    98    778.0 MiB      0.0 MiB           1               model=model_arg,
+    99    778.0 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    778.0 MiB      0.0 MiB           1               outputs=[],
+   101    778.0 MiB      0.0 MiB           1       em usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    778.6 MiB    778.6 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    778.6 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    778.6 MiB      0.0 MiB           1           se        output_descriptors=[],
+   102    778.0 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    778.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    778.0 MiB      0.0       model=model_arg,
+    99    776.0 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    776.0 MiB      0.0 MiB           1               outputs=[],
+   101    776.0 MiB      0.0 MiB           1               output_descriptors=[],
+   102    776.0 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    776.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    776.0 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    776.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    776.0 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    776.0 MiB      0.0 MiB           1        lf.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    778.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    778.6 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    778.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    778.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    778.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    778.6 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    778.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_asure_time("receive_response")
+   120    777.9 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    777.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    777.9 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    777.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    777.9 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    777.9 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    777.9 MiB      0.0 MiB           1                       data_blob,
+   128    777.9 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                           MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    778.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    778.0 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    778.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    782.7 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    778.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    782.7 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    782.7 MiB      4.7 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                         self.perf_timer.measure_time("serialize_tensor")
+   110    777.6 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    776.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112                   # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    782.7 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    782.7 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    782.7 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119        777.6 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    777.6 MiB      1.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115     ch_serialized,
+    98    778.6 MiB      0.0 MiB           1               model=model_arg,
+    99    778.6 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    778.6 MiB      0.0 MiB           1               outputs=[],
+   101    778.6 MiB      0.0 MiB           1               output_descriptors=[],
+   102    778.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    778.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    778.6 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    778.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    778.6 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tens               )
+   130                                                     )
+   131    777.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    777.9 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    777.9 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO total_time: 1.3612e-01
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Batch size: 8
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    777.9 MiB    777.9 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    777.9 MiB      0.0 MiB      782.7 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    782.7 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    782.7 MiB      0.0 MiB           1               self.perf_timer.measure_time("d                                    
+   116    777.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    777.6 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    777.6 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    777.6 MiB      0.0 MiB           1               self.perf_timer.meeserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    782.7 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    782.7 MiB      0.asure_time("receive_response")
+   120    777.6 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    777.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                       0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    782.7 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    782.7 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    782.7 MiB      0.0 MiB           1                       data_blob,
+   128    782.7 MiB      0.0 MiB           1                       dtype=str(response.result.descrip              # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    777.6 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    777.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receior in tensors]
+   109    778.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    783.0 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    778.6 MiB      0.0 MiB ve_tensor")
+   125    777.6 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    777.6 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    777.6 MiB      0.0 MiB           1                       data_blob,
+   128    777.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                    1               to_sendh.send_bytes(request_bytes)
+   112    783.0 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    783.0 MiB      4.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    783.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    783.0 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    783.0 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119         1           tensors = [batch.numpy()]
+    87    777.9 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    777.9 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    777.9 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    777.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    777.9 MiB      0.0 MiB           1           if isinstantors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    782.7 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                       ce(model, str):
+    93    777.9 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.b  
+   133    782.7 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    782.7 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 1.6600e-01
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Batch size: uild_model(model, "resnet-50", "1.0")
+    96    777.9 MiB      0.0 MiB           2           request = MessageHandler.build_16
+16:14:04 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    782.7 MiB    782.7 MiB           1       @profile
+    85                                             def run_model(self, model: bytes               )
+   130                                                     )
+   131    777.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    777.6 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    777.6 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO total_time: 4.1012e-01
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO Batch size: 8
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 0783.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    783.0 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    783.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("d
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    777.6 MiB    777.6 MiB           1       @profile
+    85                     eserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    783.0 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    783.0 MiB      0.                        def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    777.6 MiB      0.0 MiB      0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    783.0 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    783.0 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    783.0 MiB      0.0 MiB           1                       data_blob,
+   128    783.0 MiB      0.0 MiB           1                       dtype=str(response.result.descriprequest(
+    97    777.9 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    777.9 MiB      0.0 MiB           1               model=model_arg,
+    99    777.9 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    777.9 MiB      0.0 MiB           1               outputs=[],
+   101    777.9 MiB      0.0 MiB           1               output_descriptors=[],
+   102    777.9 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    777.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    777.9 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    777.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    777.9 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                  | str, batch: torch.Tensor):
+    86    782.7 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    782.7 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    782.7 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    782.7 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    782.7 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    782.7 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    782.7 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    782.7 Mi     1           tensors = [batch.numpy()]
+    87    777.6 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    777.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    777.6 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    777.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    777.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    777.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.btors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    783.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                       uild_model(model, "resnet-50", "1.0")
+    96    777.6 MiB      0.0 MiB           2           request = MessageHandler.build_  
+   133    783.0 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    783.0 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO total_time: 3.3168e-01
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO Batch size: 16
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    783.0 MiB    783.0 MiB           1       @profile
+    85                                             def run_model(self, model: bytes                                # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    777.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    782.6 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    777.9 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    782.6 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    782.6 MiB      4.7 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    782.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   1B      0.0 MiB           2           request = MessageHandler.build_request(
+    97    782.7 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    782.7 MiB      0.0 MiB           1               model=model_arg,
+    99    782.7 MiB      0.0 MiB         17    782.6 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    78  1               inputs=[built_tensor_desc],
+   100    782.7 MiB      0.0 MiB           1               outputs=[],
+   101    782.7 MiB      0.0 MiB           1               output_descriptors=[],
+   102    782.7 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    782.7 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    782.7 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    782.7 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    782.7 MiB      0.0 MiB           4           tensor_byterequest(
+    97    777.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    777.6 MiB      0.0 MiB           1               model=model_arg,
+    99    777.6 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    777.6 MiB      0.0 MiB           1               outputs=[],
+   101    777.6 MiB      0.0 MiB           1               output_descriptors=[],
+   102    777.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    777.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    777.6 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    777.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    777.6 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                  | str, batch: torch.Tensor):
+    86    783.0 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    783.0 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    783.0 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    783.0 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    783.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    783.0 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    783.0 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95             2.6 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    782.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    782.6 MiB      0.0 MiB           1               response = MessageHandler.deserialize_respo                                        model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    783.0 Minse(resp)
+   121    782.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    782.6 MiB      0.0 MiB         s = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    782.7 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    790  1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    782.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    782.6 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    782.6 MiB      0.0 MiB   .9 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    782.7 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    790.9 MiB      0.0 MiB           2               for tb in te        2                   numpy.frombuffer(
+   127    782.6 MiB      0.0 MiB           1                       data_blob,
+nsor_bytes:
+   113    790.9 MiB      8.2 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    790.9 MiB      0.0                                # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    777.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    782.3 MiB      0.0 MiB           2           with self._to_worker_fli.s MiB           1           self.perf_timer.measure_time("send")
+   117    790.9 MiB      0.0 MiB           2           with endh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    777.8 MiB      0.3 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    782.3 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    782.3 MiB      4.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    782.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   1B      0.0 MiB           2           request = MessageHandler.build_request(
+    97    783.0 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    783.0 MiB      0.0 MiB           1               model=model_arg,
+    99    783.0 MiB      0.0 MiB         17    782.3 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    78  1               inputs=[built_tensor_desc],
+   100    783.0 MiB      0.0 MiB           1               outputs=[],
+   101    783.0 MiB      0.0 MiB           1               output_descriptors=[],
+   102    783.0 MiB      0.0 MiB           1               custom_attributes=None,
+   103               128    782.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    782.6 MiB      0.0 MiB           1                                                )
+   104    783.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    783.0 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    783.0 MiB      0.0 MiB           1       self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    782.6 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    782.6 MiB      0.0 MiB           1           return result
+
+
+16:14:04 pinoak0034 SmartSim[141166:MainT        self.perf_timer.measure_time("serialize_request")
+   107    783.0 MiB      0.0 MiB           4           tensor_bytehread] INFO total_time: 1.4281e-01
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Batch size: 16
+16:14:04 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrencself._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    790.9 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    790.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    790.9 MiB      0.0 MiB  es   Line Contents
+=============================================================
+    84    782.6 MiB    782.6 MiB                    1               response = MessageHandler.deserialize_response(resp)
+   121    790.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    790.9 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    790.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    790.9 MiB      0.0 MiB           2         2.3 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    782.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    782.3 MiB      0.0 MiB           1               response = MessageHandler.deserialize_respo      result = torch.from_numpy(
+   126    790.9 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    nse(resp)
+   121    782.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    782.3 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    782.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    782.3 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    782.3 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    782.3 MiB      0.0 MiB           1                       data_blob,
+s = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    783.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    791.2 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    783.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    791.2 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    791.2 MiB      8.2 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    791.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    791.2 MiB      0.0 MiB           2           with 1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    782.6 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    782.6 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    782.6 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    782.6 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91   790.9 MiB      0.0 MiB           1                       data_blob,
+   128    790.9 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                           782.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    782.6 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    782.6 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._b           )
+   131    790.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    790.9 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    790.9 MiB      0.0 MiB           1ackbone_descriptor)
+    94                                                 else:
+    95                                        128    782.3 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    782.3 MiB      0.0 MiB           1                      return result
+
+
+16:14:05 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 3.6130e-01
+16:14:05 pinoak0034 SmartSim[141165:MainThread] INFO Batch size: 32
+16:14:05 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughpu    self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    782.3 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    782.3 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141167:MainTt_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=====================================hread] INFO total_time: 1.1509e-01
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO Batch size: 16
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrencself._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    791.2 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    791.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    791.2 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    791.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(reses   Line Contents
+=============================================================
+    84    782.3 MiB    782.3 MiB           ponse.result.descriptors)?
+   123    791.2 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    791.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    791.2 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    791.2 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127                    model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    782.6 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    782.6 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    782.6 MiB      0.0 MiB           1               model=model_arg,
+    99    782.6 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    782.6 MiB      0.0 MiB           1               outputs=[],
+   101    782.6 MiB      0.0 MiB           1               output_descriptors=[],
+ ========================
+    84    790.9 MiB    790.9 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    790.9 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    790.9 MiB    102    782.6 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    782.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    782.6 MiB      0.0 MiB           1           reque    0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    790.9 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    790.9 MiB      0.0 MiB           1               "c", "float32", list(batch.shapest_bytes = MessageHandler.serialize_request(request)
+   106    782.6 MiB      0.0 MiB           1           self.perf_timer.)
+    90                                                 )
+    91    790.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    790.9 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    790.9 MiB      0.0 MiB           1    1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    782.3 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    782.3 MiB      0.0 MiB           1           self.perf_timer.start_timings("bat           model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                              ch_size", batch.shape[0])
+    88    782.3 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    782.3 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91   791.2 MiB      0.0 MiB           1                       data_blob,
+   128    791.2 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                           782.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    782.3 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    782.3 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._b           )
+   131    791.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    791.2 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    791.2 MiB      0.0 MiB           1ackbone_descriptor)
+    94                                                 else:
+    95                                     measure_time("serialize_request")
+   107    782.6 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    782.6 M           return result
+
+
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO total_time: 2.0645e-01
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO Batch size: 32
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=====================================iB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    795.3 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    782.6 MiB      0.0 MiB           1               to_sen                   else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    790.9 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    790.9 MiB      0.0 MiB           1           dh.send_bytes(request_bytes)
+   112    795.3 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    795.3 MiB     12.7 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.se    reply_channel=self._from_worker_ch_serialized,
+    98    790.9 MiB      0.0 MiB           1               model=model_arg,
+    99    790.9 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    790.9 MiB      0.0 MiB           1               outputs=[],
+   101    790.9nd_bytes(bytes(t.data))
+   115                                         
+   116    795.3 MiB      0.0 MiB           1                        model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    782.3 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    782.3 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    782.3 M MiB      0.0 MiB           1               output_descriptors=[],
+   102    790.9 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    790.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_reiB      0.0 MiB           1               model=model_arg,
+    99    782.3 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    782.3 MiB      0.0 MiB           1               outputs=[],
+   101    782.3 MiB      0.0 MiB           1               output_descriptors=[],
+ quest")
+   105    790.9 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+     102    782.3 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    782.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    782.3 MiB      0.0 MiB           1           reque========================
+    84    791.2 MiB    791.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    791.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    791.2 MiB  st_bytes = MessageHandler.serialize_request(request)
+   106    782.3 MiB      0.0 MiB           1           self.perf_timer.    0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    791.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    791.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    791.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    791.2 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    791.2 MiB      0.0 MiB           1       self.perf_timer.measure_time("send")
+   117    795.3 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    795.3 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    795.3 MiB      0.0 MiB                     model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                               1               self.perf_timer.measure_time("receive_response")
+   120    795.3 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    795.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    795.3 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    795.3 MiB      0.0 MiB           1               106    790.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    809.2 MiB     18.3 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshapeself.perf_timer.measure_time("receive_tensor")
+   125    795.3 MiB      0.0 MiB           2               result = torch.fro(-1).view(numpy.uint8).data for tensor in tensors]
+   109    809.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    846.1 MiB      0.3 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendmeasure_time("serialize_request")
+   107    782.3 MiB      0.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    782.3 Mh:
+   111    809.2 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    845.9 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    845.9 MiB     36.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114  iB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    795.2 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    782.3 MiB      0.0 MiB           1               to_sen                                                       # to_sendh.send_bytes(bytes(t.data))
+   115                          dh.send_bytes(request_bytes)
+   112    795.2 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    795.2 MiB     12.9 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    795.2 MiB      0.0 MiB           1                           else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    791.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    791.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    791.2 MiB      0.0 MiB           1               model=model_arg,
+    99    791.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    791.2 MiB      0.0 MiB           1               outputs=[],
+   101    791.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    791.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    791.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_rem_numpy(
+   126    795.3 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    795.3 MiB      0.0 MiB           1                       data_blob,
+   128    795.3 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129       quest")
+   105    791.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+                                                     )
+   130                                                     )
+   131    795.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    795.3 MiB      0.0                
+   116    846.1 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    846.1 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    846.1 MiB      0.0 MiB           1               resp = from_recvhMiB           1           self.perf_timer.end_timings()
+   134    795.3 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141166:MainThread] INFO total_time: 3.2539e-01
+16:14:05 pinoak0034 SmartSim[141166:MainThread] INFO Batch size: 32
+16:14:05 pinoak0034 SmartSim[.recv_bytes(timeout=None)
+   119    846.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    846.1 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    846.1 MiB      0.0 MiB           1          141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+     self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    846.1 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeo   self.perf_timer.measure_time("send")
+   117    795.2 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    795.2 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    795.2 MiB      0.0 MiB          ut=None)
+   124    846.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    1               self.perf_timer.measure_time("receive_response")
+   120    795.2 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    795.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    795.2 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    795.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    795.2 MiB      0.0 MiB           2               result = torch.fro106    791.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    809.8 MiB     18.6 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    809.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    837.3 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    809.8 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    837.3 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    837.3 MiB     27.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114  
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    795.3 MiB    795.3 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                            86    795.3 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    795.3 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    795.3 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    795.3 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    795.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    795.3 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    795.3 MiB      0.0 MiB           1               model_arg = M 846.1 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    846.1 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    846.1 MiB      0.0 MiB           1                       data_blob,
+   128    846.1 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    846.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132   m_numpy(
+   126    795.2 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    795.2 MiB      0.0 MiB           1                       data_blob,
+   128    795.2 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                             
+   133    846.1 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    846.1 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141165:MainThread] INFO total_time: 2.5542e-01
+16:14:05 pinoak0034 SmartSim[                                                  )
+   130                                                     )
+   131    795.2 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    795.2 MiB      0.0 141165:MainThread] INFO Batch size: 64
+16:14:05 pinoak0034 SmartSim[141165:MainThread] INFO Iteration: 0
+Filename: /lus/cfluMiB           1           self.perf_timer.end_timings()
+   134    795.2 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO total_time: 3.5946e-01
+16:14:05 pinoak0034 SmartSim[141167:MainThread] INFO Batch size: 32
+16:14:05 pinoak0034 SmartSim[               
+   116    837.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    837.3 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    837.3 MiB      0.0 MiB           1               resp = from_recvh141167:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+.recv_bytes(timeout=None)
+   119    837.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    837.3 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    837.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    837.3 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeoessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    795.3 MiB      0.0 MiB           2      ut=None)
+   124    837.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125        request = MessageHandler.build_request(
+    97    795.3 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    795.3 MiB      0.0 MiB           1               model=model_arg,
+    99    795.3 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    795.3 MiB      0.0 MiB           1               outputs=[],
+   101    795.3 MiB      0.0 MiB           1               output_descriptors=[],
+   102    795.3 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    795.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    795.3 s02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    846.0 MiB    846.0 MiB           1       @profile
+    85                                         
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    795.2 MiB    795.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    795.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    795.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    795.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    795.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    795.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    795.2 MiB      0.0 M 837.3 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    837.3 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    837.3 MiB      0.0 MiB           1                       data_blob,
+   128    837.3 MiB      0.0 MiB           1                    iB           1           if isinstance(model, str):
+    93    795.2 MiB      0.0 MiB           1               model_arg = M   dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    837.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    837.3 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    837.3 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO total_time: 3.7860e-01
+16:14:05 pinoak0034 SmartSim[MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    795.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    814.0 MiB     18.7 MiB           4           tensor_bytes = [tensor.tobytes() for tensor141168:MainThread] INFO Batch size: 64
+16:14:05 pinoak0034 SmartSim[141168:MainThread] INFO Iteration: 0
+Filename: /lus/cflu in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    814.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    850.6 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    814.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    850.6 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    850.6 MiB     36.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                          essageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    795.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    795.2 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    795.2 MiB      0.0 MiB           1               model=model_arg,
+    99    795.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    795.2 MiB      0.0 MiB           1               outputs=[],
+   101    795.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    795.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                            s02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    837.3 MiB    837.3 MiB           1       @profile
+    85                                              )
+   104    795.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    795.2     def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    837.3 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    837.3 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    837.3 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    837.3 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    837.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    837.3 MiB      0.0 MiB           1           if isinstance(model, str):
+                                   # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    850.6 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    850.6 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    850.6 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    850.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    850.6 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    850.6 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    850.6 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    850.6MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    795.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    813.5 MiB     18.3 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    813.5 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    841.0 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    813.5 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    841.0 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    841.0 MiB 93    837.3 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "r    27.6 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                          esnet-50", "1.0")
+    96    837.3 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    837.3 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    837.3 MiB      0.0 MiB           1               model=model_arg,
+    9 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    850.6 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    850.6 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    850.6 MiB      0.0 MiB          9    837.3 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    837.3 MiB      0.0 MiB           1               outputs=[],
+   101    837.3 MiB      0.0 MiB           1               output_descriptors=[],
+   102    837.3 MiB      0.0 MiB           1               custom 1                       data_blob,
+   128    850.6 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    850.6 MiB_attributes=None,
+   103                                                 )
+   104    837.3 MiB      0.0 MiB           1           0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    850.6 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    850.6 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141166:MainThread] INFO total_time: 3.5930e-01
+16:14:05 pinoak0034 SmartSim[141166:MainThread] INFO                                # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    841.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    841.0 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    841.0 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    841.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    841.0 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    841.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    841.0 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    841.0      self.perf_timer.measure_time("build_request")
+   105    837.3 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    837.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    874.3 MiB     37.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    874.3 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    911.1 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    874.3 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    911.1 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    911.1 MiB     36.8 MiB           1                   to_sendh.sendBatch size: 64
+16:14:05 pinoak0034 SmartSim[141166:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    850.9 MiB    850.9 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    850.9 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    850.9 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    850.9 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    850.9 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    850.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    841.0 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    841.0 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    841.0 MiB      0.0 MiB           1                       data_blob,
+   128    841.0 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    841.0 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    841.0 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    841.0 MiB      0.0 MiB           1           return result
+
+
+16:14_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    911.1 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    911.1 MiB     :06 pinoak0034 SmartSim[141167:MainThread] INFO total_time: 2.8047e-01
+16:14:06 pinoak0034 SmartSim[141167:MainThread] INFO  0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    911.1 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    911.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    911.1 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    911.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data _descriptor")
+    92    850.9 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    850.9 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95 blobs? recv depending on the len(response.result.descriptors)?
+   123    911.1 MiB      0.0 MiB           1               da                                                    model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    850.9 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    850.9 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    850.9 MiB      0.0 MiB           1               model=model_arg,
+    99    850.9 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    850.9 MiB      0.0 MiB           1               outputs=[],
+   101    850.9 MiB      0.0 MiB           1               output_descriptors=[],
+   102    850.9 MiB      0.0 MiB           1               custom_attributes=None,
+   103Batch size: 64
+16:14:06 pinoak0034 SmartSim[141167:MainThread] INFO Iteration: 0
+Filename: /lus/cflus02/cote/smartsim/SmartSim/ex/high_throughput_inference/mock_app.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    84    841.2 MiB    841.2 MiB           1       @profile
+    85                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    841.2 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    841.2 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    841.2 MiB      0.0 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    841.2 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                        ta_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    911.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    911.1 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    911.1 MiB      0.0 MiB           2                                    )
+    91    841.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor        numpy.frombuffer(
+   127    911.1 MiB      0.0 MiB           1                       data_blob,
+   128    911.1 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                       )
+   104    850.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    850.9 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    850.9 MiB      0.0 MiB                                                  )
+   131    911.1 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    911.1 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134          1           self.perf_timer.measure_time("serialize_request")
+   107    887.8 MiB     37.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for     def run_model(self, model: bytes | str, batch: torch.Tensor):
+    86    846.0 MiB      0.0 MiB           1           tensors = [batch.numpy()]
+    87    846.0 MiB      0.0 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    88    846.0 MiB      0.0 MiB        911.1 MiB      0.0 MiB           1           return result
+
+
+16:14:06 pinoak0034 SmartSim[141168:MainThread] INFO total_ti     2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    89    846.0 MiB      0.0 MiB           1               "c", "float32", list(batch.shape)
+    90                                                 )
+    91    846.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    92    846.0 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    846.0 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95                                                     model_arg = MessageHandler.build_model(model, "r_descriptor")
+    92    841.2 MiB      0.0 MiB           1           if isinstance(model, str):
+    93    841.2 MiB      0.0 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    94                                                 else:
+    95 tensor in tensors]
+   109    887.8 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    906.3 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    887.8 MiB      0.0 esnet-50", "1.0")
+    96    846.0 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    846.0 MiB      0.0 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    98    846.0 MiB      0.0 MiB           1               model=model_arg,
+    99    846.0 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    846.0 MiB      0.0 MiB           1               outputs=[],
+   101    846.0 MiB      0.0 MiB           1               output_descriptors=[],
+   102    846.0 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                                 )
+   104    846.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    846.0 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    846.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    883.0 MiB     37.0 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    883.0 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    901.4 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    883.0 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    901.4 MiB      0.0 MiB           2               for tb in tensor_bytes:
+   113    901.4 MiB     18.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    901.4 MiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    901.4 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    901.4 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119    901.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    901.4 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    901.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    901.4 MiB      0.0 MiB           1               da                                                    model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    96    841.2 MiB      0.0 MiB           2           request = MessageHandler.build_request(
+    97    841.2 MiB      0.0 MiB           1               reply_channel=self._from_worta_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    901.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    901.4 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    901.4 MiB      0.0 MiB           2           MiB           1               to_sendh.send_bytes(request_bytes)
+   112    906.3 MiB      0.0 MiB           2               me: 2.7797e-01
+a3_batch_size a3_build_tensor_descriptor a3_build_request a3_serialize_request a3_serialize_tensor a3_send a3_receive_response a3_deserialize_response a3_receive_tensor a3_deserialize_tensor a3_total_time
+        numpy.frombuffer(
+   127    901.4 MiB      0.0 MiB           1                       data_blob,
+   128    901.4 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130      ker_ch_serialized,
+    98    841.2 MiB      0.0 MiB           1               model=model_arg,
+    99    841.2 MiB      0.0 MiB           1               inputs=[built_tensor_desc],
+   100    841.2 MiB      0.0 MiB           1               outputs=[],
+   101    841.2 MiB      0.0 MiB           1               output_descriptors=[],
+   102    841.2 MiB      0.0 MiB           1               custom_attributes=None,
+   103                                               )
+   131    901.4 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    901.4 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134  for tb in tensor_bytes:
+   113    906.3 MiB     18.4 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    906.3   901.4 MiB      0.0 MiB           1           return result
+
+
+16:14:05 pinoak0034 SmartSim[141165:MainThread] INFO total_tiMiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    906.3 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    906.3 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119me: 2.2618e-01
+a0_batch_size a0_build_tensor_descriptor a0_build_request a0_serialize_request a0_serialize_tensor a0_send a0_receive_response a0_deserialize_response a0_receive_tensor a0_deserialize_tensor a0_total_time
+    906.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    906.3 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    906.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   122                                                     # list of data blobs? recv depending on                                                 )
+   104    841.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("build_request")
+   105    841.2 MiB      0.0 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   106    841.2 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_request")
+   107    877.9 MiB     36.8 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   108                                                 # tensor_bytes = [tensor.reshape(-1).view(numpy.uint8).data for tensor in tensors]
+   109    877.9 MiB      0.0 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110    914.9 MiB      0.0 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111    877.9 MiB      0.0 MiB           1               to_sendh.send_bytes(request_bytes)
+   112    914.9 MiB      0.0 MiB           2                the len(response.result.descriptors)?
+   123    906.3 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    906.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    906.3 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    906.3 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    906.3 MiB      0.0 MiB           1                       data_blob,
+   128    906.3 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    906.3 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                   for tb in tensor_bytes:
+   113    914.9 MiB     37.0 MiB           1                   to_sendh.send_bytes(tb) #TODO NOT FAST ENOUGH!!!
+   114                                                         # to_sendh.send_bytes(bytes(t.data))
+   115                                         
+   116    914.9       
+   133    906.3 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    906.3 MiB      0.0 MiBMiB      0.0 MiB           1           self.perf_timer.measure_time("send")
+   117    914.9 MiB      0.0 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   118    914.9 MiB      0.0 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   119           1           return result
+
+
+16:14:06 pinoak0034 SmartSim[141166:MainThread] INFO total_time: 3.3044e-01
+a1_batch_size a1_build_tensor_descriptor a1_build_request a1_serialize_request a1_serialize_tensor a1_send a1_receive_response a1_deserialize_response a1_receive_tensor a1_deserialize_t    914.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_response")
+   120    914.9 MiB      0.0 MiB           1               response = MessageHandler.deserialize_response(resp)
+   121    914.9 MiB      0.0 MiB           1               self.perf_timer.measure_timensor a1_total_time
+e("deserialize_response")
+   122                                                     # list of data blobs? recv depending on the len(response.result.descriptors)?
+   123    914.9 MiB      0.0 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   124    914.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   125    914.9 MiB      0.0 MiB           2               result = torch.from_numpy(
+   126    914.9 MiB      0.0 MiB           2                   numpy.frombuffer(
+   127    914.9 MiB      0.0 MiB           1                       data_blob,
+   128    914.9 MiB      0.0 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   129                                                         )
+   130                                                     )
+   131    914.9 MiB      0.0 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   132                                         
+   133    914.9 MiB      0.0 MiB           1           self.perf_timer.end_timings()
+   134    914.9 MiB      0.0 MiB           1           return result
+
+
+16:14:06 pinoak0034 SmartSim[141167:MainThread] INFO total_time: 1.9179e-01
+a2_batch_size a2_build_tensor_descriptor a2_build_request a2_serialize_request a2_serialize_tensor a2_send a2_receive_response a2_deserialize_response a2_receive_tensor a2_deserialize_tensor a2_total_time

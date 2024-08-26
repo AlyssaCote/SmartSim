@@ -1,0 +1,242 @@
+These come from TorchWorker and MachineLearningWorkerCore
+
+
+TorchWorker
+
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/worker/torch_worker.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    82    380.5 MiB    380.5 MiB           1       @staticmethod
+    83                                             @profile
+    84                                             def transform_input(
+    85                                                 batch: RequestBatch,
+    86                                                 fetch_results: list[FetchInputResult],
+    87                                                 mem_pool: MemoryPool,
+    88                                             ) -> TransformInputResult:
+    89    380.5 MiB      0.0 MiB           1           results: list[torch.Tensor] = []
+    90    380.5 MiB      0.0 MiB           1           total_samples = 0
+    91    380.5 MiB      0.0 MiB           1           slices: list[slice] = []
+    92                                         
+    93    380.5 MiB      0.0 MiB           1           all_dims: list[list[int]] = []
+    94    380.5 MiB      0.0 MiB           1           all_dtypes: list[str] = []
+    95    380.5 MiB      0.0 MiB           1           if fetch_results[0].meta is None:
+    96                                                     raise ValueError("Cannot reconstruct tensor without meta information")
+    97                                                 # Traverse inputs to get total number of samples and compute slices
+    98                                                 # Assumption: first dimension is samples, all tensors in the same input
+    99                                                 # have same number of samples
+   100                                                 # thus we only look at the first tensor for each input
+   101    380.5 MiB      0.0 MiB           2           for res_idx, fetch_result in enumerate(fetch_results):
+   102    380.5 MiB      0.0 MiB           7               if fetch_result.meta is None or any(
+   103    380.5 MiB      0.0 MiB           2                   item_meta is None for item_meta in fetch_result.meta
+   104                                                     ):
+   105                                                         raise ValueError("Cannot reconstruct tensor without meta information")
+   106    380.5 MiB      0.0 MiB           1               first_tensor_desc: tensor_capnp.TensorDescriptor = fetch_result.meta[0]
+   107    380.5 MiB      0.0 MiB           1               num_samples = first_tensor_desc.dimensions[0]
+   108    380.5 MiB      0.0 MiB           1               slices.append(slice(total_samples, total_samples + num_samples))
+   109    380.5 MiB      0.0 MiB           1               total_samples = total_samples + num_samples
+   110                                         
+   111    380.5 MiB      0.0 MiB           1               if res_idx == len(fetch_results) - 1:
+   112                                                         # For each tensor in the last input, get remaining dimensions
+   113                                                         # Assumptions: all inputs have the same number of tensors and
+   114                                                         # last N-1 dimensions match across inputs for corresponding tensors
+   115                                                         # thus: resulting array will be of size (num_samples, all_other_dims)
+   116    380.5 MiB      0.0 MiB           2                   for item_meta in fetch_result.meta:
+   117    380.5 MiB      0.0 MiB           1                       tensor_desc: tensor_capnp.TensorDescriptor = item_meta
+   118    380.5 MiB      0.0 MiB           1                       tensor_dims = list(tensor_desc.dimensions)
+   119    380.5 MiB      0.0 MiB           1                       all_dims.append([total_samples, *tensor_dims[1:]])
+   120    380.5 MiB      0.0 MiB           1                       all_dtypes.append(str(tensor_desc.dataType))
+   121                                         
+   122    381.2 MiB      0.0 MiB           2           for result_tensor_idx, (dims, dtype) in enumerate(zip(all_dims, all_dtypes)):
+   123    380.5 MiB      0.0 MiB           1               itemsize = np.empty((1), dtype=dtype).itemsize
+   124    380.5 MiB      0.0 MiB           1               alloc_size = int(np.prod(dims) * itemsize)
+   125    380.5 MiB      0.0 MiB           1               mem_alloc = mem_pool.alloc(alloc_size)
+   126    380.5 MiB      0.0 MiB           1               mem_view = mem_alloc.get_memview()
+   127    381.2 MiB      0.7 MiB           2               mem_view[:alloc_size] = b"".join(
+   128    380.5 MiB      0.0 MiB           6                   [
+   129    380.5 MiB      0.0 MiB           1                       fetch_result.inputs[result_tensor_idx]
+   130    380.5 MiB      0.0 MiB           2                       for fetch_result in fetch_results
+   131                                                         ]
+   132                                                     )
+   133                                         
+   134    381.2 MiB      0.0 MiB           1               results.append(mem_alloc.serialize())
+   135                                         
+   136    381.2 MiB      0.0 MiB           1           return TransformInputResult(results, slices, all_dims)
+
+
+Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/worker/torch_worker.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    59    671.7 MiB    671.7 MiB           1       @staticmethod
+    60                                             @profile
+    61                                             def load_model(
+    62                                                 batch: RequestBatch, fetch_result: FetchModelResult, device: str
+    63                                             ) -> LoadModelResult:
+    64    671.7 MiB      0.0 MiB           1           if fetch_result.model_bytes:
+    65    671.7 MiB      0.0 MiB           1               model_bytes = fetch_result.model_bytes
+    66                                                 elif batch.raw_model and batch.raw_model.data:
+    67                                                     model_bytes = batch.raw_model.data
+    68                                                 else:
+    69                                                     raise ValueError("Unable to load model without reference object")
+    70                                         
+    71    671.7 MiB      0.0 MiB           1           device_to_torch = {"cpu": "cpu", "gpu": "cuda"}
+    72    671.7 MiB      0.0 MiB           3           for old, new in device_to_torch.items():
+    73    671.7 MiB      0.0 MiB           2               device = device.replace(old, new)
+    74                                         
+    75    671.7 MiB      0.0 MiB           1           buffer = io.BytesIO(initial_bytes=model_bytes)
+    76    855.3 MiB      0.0 MiB           2           with torch.no_grad():
+    77    855.3 MiB    183.6 MiB           1               model = torch.jit.load(buffer, map_location=device)  # type: ignore #ALERT
+    78    855.3 MiB      0.0 MiB           1               model.eval()
+    79    855.3 MiB      0.0 MiB           1           result = LoadModelResult(model)
+    80    855.3 MiB      0.0 MiB           1           return result
+
+    Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/worker/torch_worker.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   139    757.4 MiB    757.4 MiB           1       @staticmethod
+   140                                             @profile
+   141                                             def execute(
+   142                                                 batch: RequestBatch,
+   143                                                 load_result: LoadModelResult,
+   144                                                 transform_result: TransformInputResult,
+   145                                                 device: str,
+   146                                             ) -> ExecuteResult:
+   147    757.4 MiB      0.0 MiB           1           if not load_result.model:
+   148                                                     raise SmartSimError("Model must be loaded to execute")
+   149    757.4 MiB      0.0 MiB           1           device_to_torch = {"cpu": "cpu", "gpu": "cuda"}
+   150    757.4 MiB      0.0 MiB           3           for old, new in device_to_torch.items():
+   151    757.4 MiB      0.0 MiB           2               device = device.replace(old, new)
+   152                                         
+   153    757.4 MiB      0.0 MiB           1           tensors = []
+   154    757.4 MiB      0.0 MiB           1           mem_allocs = []
+   155    757.8 MiB      0.0 MiB           3           for transformed, dims in zip(
+   156    757.4 MiB      0.0 MiB           1               transform_result.transformed, transform_result.dims
+   157                                                 ):
+   158    757.4 MiB      0.0 MiB           1               mem_alloc = MemoryAlloc.attach(transformed)
+   159    757.4 MiB      0.0 MiB           1               mem_allocs.append(mem_alloc)
+   160    757.8 MiB      0.0 MiB           2               tensors.append(
+   161    757.8 MiB      0.0 MiB           2                   torch.from_numpy(
+   162    757.8 MiB      0.0 MiB           2                       np.frombuffer(
+   163    757.8 MiB      0.5 MiB           1                           mem_alloc.get_memview()[0 : np.prod(dims) * 4], dtype=np.float32
+   164    757.8 MiB      0.0 MiB           1                       ).reshape(dims)
+   165                                                         )
+   166                                                     )
+   167                                         
+   168    757.8 MiB      0.0 MiB           1           model: torch.nn.Module = load_result.model
+   169    904.3 MiB      0.1 MiB           2           with torch.no_grad():
+   170    758.0 MiB      0.0 MiB           1               model.eval(
+   171    904.3 MiB      0.0 MiB           1               results = [
+   172    904.3 MiB    146.4 MiB           2                   model( #ALERT the problem seems to be on line 168.investigate further
+   173    758.0 MiB      0.0 MiB           6                       *[
+   174    758.0 MiB      0.0 MiB           1                           tensor.to(device, non_blocking=True).detach()
+   175    758.0 MiB      0.0 MiB           2                           for tensor in tensors
+   176                                                             ]
+   177                                                         )
+   178                                                     ]
+   179                                         
+   180    904.3 MiB      0.0 MiB           1           transform_result.transformed = []
+   181                                         
+   182    904.3 MiB      0.0 MiB           1           execute_result = ExecuteResult(results, transform_result.slices)
+   183    904.3 MiB      0.0 MiB           2           for mem_alloc in mem_allocs:
+   184    904.3 MiB      0.0 MiB           1               mem_alloc.free()
+   185    904.3 MiB      0.0 MiB           1           return execute_result
+   
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   187    904.4 MiB    904.4 MiB           1       @staticmethod
+   188                                             @profile
+   189                                             def transform_output(
+   190                                                 batch: RequestBatch,
+   191                                                 execute_result: ExecuteResult,
+   192                                             ) -> list[TransformOutputResult]:
+   193    904.4 MiB      0.0 MiB           1           transformed_list: list[TransformOutputResult] = []
+   194    904.4 MiB      0.0 MiB           6           cpu_predictions = [
+   195    904.4 MiB      0.0 MiB           2               prediction.cpu() for prediction in execute_result.predictions
+   196                                                 ]
+   197    904.5 MiB      0.0 MiB           2           for result_slice in execute_result.slices:
+   198    904.4 MiB      0.0 MiB           1               transformed = []
+   199    904.5 MiB      0.0 MiB           2               for cpu_item in cpu_predictions:
+   200    904.5 MiB      0.1 MiB           1                   transformed.append(cpu_item[result_slice].numpy().tobytes())
+   201                                         
+   202                                                         # todo: need the shape from latest schemas added here.
+   203    904.5 MiB      0.0 MiB           2                   transformed_list.append(
+   204    904.5 MiB      0.0 MiB           1                       TransformOutputResult(transformed, None, "c", "float32")
+   205                                                         )  # fixme
+   206                                         
+   207    904.5 MiB      0.0 MiB           1           execute_result.predictions = []
+   208                                         
+   209    904.5 MiB      0.0 MiB           1           return transformed_list
+
+
+MachineLearningWorkerCore
+
+
+   Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/worker/worker.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   293    377.2 MiB    377.2 MiB           1       @staticmethod
+   294                                             @profile
+   295                                             def fetch_model(
+   296                                                 batch: RequestBatch, feature_stores: t.Dict[str, FeatureStore]
+   297                                             ) -> FetchModelResult:
+   298                                                 """Given a resource key, retrieve the raw model from a feature store
+   299                                                 :param batch: The batch of requests that triggered the pipeline
+   300                                                 :param feature_stores: Available feature stores used for persistence
+   301                                                 :return: Raw bytes of the model"""
+   302                                         
+   303                                                 # All requests in the same batch share the model
+   304    377.2 MiB      0.0 MiB           1           if batch.raw_model:
+   305                                                     return FetchModelResult(batch.raw_model.data)
+   306                                         
+   307    377.2 MiB      0.0 MiB           1           if not feature_stores:
+   308                                                     raise ValueError("Feature store is required for model retrieval")
+   309                                         
+   310    377.2 MiB      0.0 MiB           1           if batch.model_key is None:
+   311                                                     raise SmartSimError(
+   312                                                         "Key must be provided to retrieve model from feature store"
+   313                                                     )
+   314                                         
+   315    377.2 MiB      0.0 MiB           1           key, fsd = batch.model_key.key, batch.model_key.descriptor
+   316                                         
+   317    377.2 MiB      0.0 MiB           1           try:
+   318    377.2 MiB      0.0 MiB           1               feature_store = feature_stores[fsd]
+   319    671.7 MiB    294.5 MiB           1               raw_bytes: bytes = t.cast(bytes, feature_store[key]) #ALERT
+   320    671.7 MiB      0.0 MiB           1               return FetchModelResult(raw_bytes)
+   321                                                 except FileNotFoundError as ex:
+   322                                                     logger.exception(ex)
+   323                                                     raise SmartSimError(f"Model could not be retrieved with key {key}") from ex
+
+
+   Filename: /lus/cflus02/cote/smartsim/SmartSim/smartsim/_core/mli/infrastructure/worker/worker.py
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   273    904.6 MiB    904.6 MiB           1       @staticmethod
+   274                                             @profile
+   275                                             def prepare_outputs(reply: InferenceReply) -> t.List[t.Any]:
+   276    904.6 MiB      0.0 MiB           1           prepared_outputs: t.List[t.Any] = []
+   277    904.6 MiB      0.0 MiB           1           if reply.output_keys:
+   278                                                     for value in reply.output_keys:
+   279                                                         if not value:
+   280                                                             continue
+   281                                                         msg_key = MessageHandler.build_tensor_key(value.key, value.descriptor)
+   282                                                         prepared_outputs.append(msg_key)
+   283    904.6 MiB      0.0 MiB           1           elif reply.outputs:
+   284    904.7 MiB      0.0 MiB           2               for _ in reply.outputs:
+   285    904.7 MiB      0.0 MiB           2                   msg_tensor_desc = MessageHandler.build_tensor_descriptor(
+   286    904.7 MiB      0.1 MiB           1                       "c",
+   287    904.7 MiB      0.0 MiB           1                       "float32",
+   288    904.7 MiB      0.0 MiB           1                       [1],
+   289                                                         )
+   290    904.7 MiB      0.0 MiB           1                   prepared_outputs.append(msg_tensor_desc)
+   291    904.7 MiB      0.0 MiB           1           return prepared_outputs
+
+
+deserialize_message: 0.0 MiB
+fetch_inputs: 0.0 MiB
+place_output: not called

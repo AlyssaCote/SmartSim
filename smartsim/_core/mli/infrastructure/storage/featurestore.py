@@ -29,6 +29,8 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel, Field
 
+# from memory_profiler import profile
+
 from smartsim.log import get_logger
 
 logger = get_logger(__name__)
@@ -48,12 +50,14 @@ class FeatureStore(ABC):
     values from a feature store implementation"""
 
     @abstractmethod
+    # @profile
     def __getitem__(self, key: str) -> t.Union[str, bytes]:
         """Retrieve an item using key
 
         :param key: Unique key of an item to retrieve from the feature store"""
 
     @abstractmethod
+    # @profile
     def __setitem__(self, key: str, value: t.Union[str, bytes]) -> None:
         """Assign a value using key
 
@@ -61,6 +65,7 @@ class FeatureStore(ABC):
         :param value: Value to persist in the feature store"""
 
     @abstractmethod
+    # @profile
     def __contains__(self, key: str) -> bool:
         """Membership operator to test for a key existing within the feature store.
 
@@ -69,6 +74,7 @@ class FeatureStore(ABC):
 
     @property
     @abstractmethod
+    # @profile
     def descriptor(self) -> str:
         """Unique identifier enabling a client to connect to the feature store
 

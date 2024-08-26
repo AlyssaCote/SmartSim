@@ -1,0 +1,251 @@
+from workermanager.py
+
+WorkerManager
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    69    377.7 MiB    377.7 MiB           1       @profile
+    70                                             def __init__(
+    71                                                 self,
+    72                                                 config_loader: EnvironmentConfigLoader,
+    73                                                 worker_type: t.Type[MachineLearningWorkerBase],
+    74                                                 dispatcher_queue: "mp.Queue[RequestBatch]",
+    75                                                 as_service: bool = False,
+    76                                                 cooldown: int = 0,
+    77                                                 device: t.Literal["cpu", "gpu"] = "cpu",
+    78                                             ) -> None:
+    79                                                 """Initialize the WorkerManager
+    80                                         
+    81                                                 :param config_loader: Environment config loader that loads the task queue and
+    82                                                 feature store
+    83                                                 :param worker_type: The type of worker to manage
+    84                                                 :param dispatcher_queue: Queue from which the batched requests have to be pulled
+    85                                                 :param as_service: Specifies run-once or run-until-complete behavior of service
+    86                                                 :param cooldown: Number of seconds to wait before shutting down after
+    87                                                 shutdown criteria are met
+    88                                                 :param comm_channel_type: The type of communication channel used for callbacks
+    89                                                 :param device: The device on which the Worker should run. Every worker manager
+    90                                                 is assigned one single GPU (if available), thus the device should have no index.
+    91                                                 """
+    92    377.7 MiB      0.0 MiB           1           super().__init__(as_service, cooldown)
+    93                                         
+    94    377.7 MiB      0.0 MiB           1           self._dispatcher_queue = dispatcher_queue
+    95    377.7 MiB      0.0 MiB           1           """The dispatcher queue the manager monitors for new tasks"""
+    96    377.7 MiB      0.0 MiB           1           self._worker = worker_type()
+    97    377.7 MiB      0.0 MiB           1           """The ML Worker implementation"""
+    98    377.7 MiB      0.0 MiB           1           self._callback_factory = config_loader._callback_factory
+    99    377.7 MiB      0.0 MiB           1           """The type of communication channel to construct for callbacks"""
+   100    377.7 MiB      0.0 MiB           1           self._device = device
+   101    377.7 MiB      0.0 MiB           1           """Device on which workers need to run"""
+   102    377.7 MiB      0.0 MiB           1           self._cached_models: dict[str, t.Any] = {}
+   103    377.7 MiB      0.0 MiB           1           """Dictionary of previously loaded models"""
+   104    377.7 MiB      0.0 MiB           1           self._feature_stores: t.Dict[str, FeatureStore] = {}
+   105    377.7 MiB      0.0 MiB           1           """A collection of attached feature stores"""
+   106    377.7 MiB      0.0 MiB           1           self._featurestore_factory = config_loader._featurestore_factory
+   107    377.7 MiB      0.0 MiB           1           """A factory method to create a desired feature store client type"""
+   108    378.7 MiB      1.1 MiB           1           self._backbone: t.Optional[FeatureStore] = config_loader.get_backbone()
+   109    378.7 MiB      0.0 MiB           1           """A standalone, system-created feature store used to share internal
+   110                                                 information among MLI components"""
+   111    378.7 MiB      0.0 MiB           1           self._device_manager: t.Optional[DeviceManager] = None
+   112    378.7 MiB      0.0 MiB           1           """Object responsible for model caching and device access"""
+   113    378.7 MiB      0.0 MiB           1           self._perf_timer = PerfTimer(prefix="w_", debug=True, timing_on=True)
+   114    378.7 MiB      0.0 MiB           1           """Performance timer"""
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   120    376.2 MiB    376.2 MiB           1       @profile
+   121                                             def _check_feature_stores(self, batch: RequestBatch) -> bool:
+   122                                                 """Ensures that all feature stores required by the request are available
+   123                                         
+   124                                                 :param batch: The batch of requests to validate
+   125                                                 :returns: False if feature store validation fails for the batch, True otherwise
+   126                                                 """
+   127                                                 # collect all feature stores required by the request
+   128    376.2 MiB      0.0 MiB           1           fs_model: t.Set[str] = set()
+   129    376.2 MiB      0.0 MiB           1           if batch.model_key.key:
+   130    376.2 MiB      0.0 MiB           1               fs_model = {batch.model_key.descriptor}
+   131    376.2 MiB      0.0 MiB           3           fs_inputs = {key.descriptor for key in batch.input_keys}
+   132    376.2 MiB      0.0 MiB           3           fs_outputs = {key.descriptor for key in batch.output_keys}
+   133                                         
+   134                                                 # identify which feature stores are requested and unknown
+   135    376.2 MiB      0.0 MiB           1           fs_desired = fs_model.union(fs_inputs).union(fs_outputs)
+   136    376.2 MiB      0.0 MiB           3           fs_actual = {item.descriptor for item in self._feature_stores.values()}
+   137    376.2 MiB      0.0 MiB           1           fs_missing = fs_desired - fs_actual
+   138                                         
+   139    376.2 MiB      0.0 MiB           1           if self._featurestore_factory is None:
+   140                                                     logger.error("No feature store factory configured")
+   141                                                     return False
+   142                                         
+   143                                                 # create the feature stores we need to service request
+   144    376.2 MiB      0.0 MiB           1           if fs_missing:
+   145    376.2 MiB      0.0 MiB           1               logger.debug(f"Adding feature store(s): {fs_missing}")
+   146    377.4 MiB      0.0 MiB           2               for descriptor in fs_missing:
+   147    377.4 MiB      1.1 MiB           1                   feature_store = self._featurestore_factory(descriptor)
+   148    377.4 MiB      0.0 MiB           1                   self._feature_stores[descriptor] = feature_store
+   149                                         
+   150    377.4 MiB      0.0 MiB           1           return True
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   152    376.2 MiB    376.2 MiB           1       @profile
+   153                                             def _validate_batch(self, batch: RequestBatch) -> bool:
+   154                                                 """Ensure the request can be processed
+   155                                         
+   156                                                 :param batch: The batch of requests to validate
+   157                                                 :return: False if the request fails any validation checks, True otherwise"""
+   158                                         
+   159    376.2 MiB      0.0 MiB           1           if batch is None or len(batch.requests) == 0:
+   160                                                     return False
+   161                                         
+   162    377.4 MiB      1.1 MiB           1           return self._check_feature_stores(batch)
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   166    375.9 MiB    375.9 MiB           1       @profile
+   167                                             def _on_iteration(self) -> None:
+   168                                                 """Executes calls to the machine learning worker implementation to complete
+   169                                         
+   170                                                 the inference pipeline"""
+   171                                         
+   172    375.9 MiB      0.0 MiB           1           pre_batch_time = time.perf_counter()
+   173    375.9 MiB      0.0 MiB           1           try:
+   174    376.2 MiB      0.3 MiB           1               batch: RequestBatch = self._dispatcher_queue.get(timeout=0.0001)
+   175                                                 except Empty:
+   176                                                     return
+   177                                         
+   178    376.2 MiB      0.0 MiB           2           self._perf_timer.start_timings(
+   179    376.2 MiB      0.0 MiB           1               "flush_requests", time.perf_counter() - pre_batch_time
+   180                                                 )
+   181                                         
+   182    377.4 MiB      1.1 MiB           1           if not self._validate_batch(batch):
+   183                                                     exception_handler(
+   184                                                         ValueError("An invalid batch was received"),
+   185                                                         None,
+   186                                                         "Error batching inputs, the batch was invalid.",
+   187                                                     )
+   188                                                     return
+   189                                         
+   190    377.4 MiB      0.0 MiB           1           try:
+   191    377.4 MiB      0.0 MiB           1               if self._device_manager is None:
+   192                                                         for request in batch.requests:
+   193                                                             exception_handler(
+   194                                                                 ValueError(
+   195                                                                     "No Device Manager available: did you call _on_start()?"
+   196                                                                 ),
+   197                                                                 request.callback,
+   198                                                                 "Error acquiring device manager",
+   199                                                             )
+   200                                                         return
+   201    757.6 MiB    380.2 MiB           2               device: WorkerDevice = next( #ALERT
+   202    377.4 MiB      0.0 MiB           2                   self._device_manager.get_device(
+   203    377.4 MiB      0.0 MiB           1                       worker=self._worker,
+   204    377.4 MiB      0.0 MiB           1                       batch=batch,
+   205    377.4 MiB      0.0 MiB           1                       feature_stores=self._feature_stores,
+   206                                                         )
+   207                                                     )
+   208                                                 except Exception as exc:
+   209                                                     for request in batch.requests:
+   210                                                         exception_handler(
+   211                                                             exc,
+   212                                                             request.callback,
+   213                                                             "Error loading model on device or getting device.",
+   214                                                         )
+   215                                                     return
+   216    757.6 MiB      0.0 MiB           1           self._perf_timer.measure_time("fetch_model")
+   217                                         
+   218    757.6 MiB      0.0 MiB           1           try:
+   219    757.6 MiB      0.0 MiB           1               model_result = LoadModelResult(device.get_model(batch.model_key.key))
+   220                                                 except Exception as exc:
+   221                                                     for request in batch.requests:
+   222                                                         exception_handler(
+   223                                                             exc, request.callback, "Error getting model from device."
+   224                                                         )
+   225                                                     return
+   226    757.6 MiB      0.0 MiB           1           self._perf_timer.measure_time("load_model")
+   227                                         
+   228    757.6 MiB      0.0 MiB           1           if batch.inputs is None:
+   229                                                     for request in batch.requests:
+   230                                                         exception_handler(
+   231                                                             ValueError("Error batching inputs"),
+   232                                                             request.callback,
+   233                                                             "Error batching inputs.",
+   234                                                         )
+   235                                                     return
+   236    757.6 MiB      0.0 MiB           1           transformed_input = batch.inputs
+   237                                         
+   238    757.6 MiB      0.0 MiB           1           try:
+   239    904.6 MiB    147.0 MiB           2               execute_result = self._worker.execute( #ALERT
+   240    757.6 MiB      0.0 MiB           1                   batch, model_result, transformed_input, device.name
+   241                                                     )
+   242                                                 except Exception as e:
+   243                                                     for request in batch.requests:
+   244                                                         exception_handler(e, request.callback, "Failed while executing.")
+   245                                                     return
+   246    904.6 MiB      0.0 MiB           1           self._perf_timer.measure_time("execute")
+   247                                         
+   248    904.6 MiB      0.0 MiB           1           try:
+   249    904.8 MiB      0.2 MiB           1               transformed_outputs = self._worker.transform_output(batch, execute_result)
+   250                                                 except Exception as e:
+   251                                                     for request in batch.requests:
+   252                                                         exception_handler(
+   253                                                             e, request.callback, "Failed while transforming the output."
+   254                                                         )
+   255                                                     return
+   256                                         
+   257    904.9 MiB      0.0 MiB           2           for request, transformed_output in zip(batch.requests, transformed_outputs):
+   258    904.8 MiB      0.0 MiB           1               reply = InferenceReply()
+   259    904.8 MiB      0.0 MiB           1               if request.output_keys:
+   260                                                         try:
+   261                                                             reply.output_keys = self._worker.place_output(
+   262                                                                 request,
+   263                                                                 transformed_output,
+   264                                                                 self._feature_stores,
+   265                                                             )
+   266                                                         except Exception as e:
+   267                                                             exception_handler(
+   268                                                                 e, request.callback, "Failed while placing the output."
+   269                                                             )
+   270                                                             continue
+   271                                                     else:
+   272    904.8 MiB      0.0 MiB           1                   reply.outputs = transformed_output.outputs
+   273    904.8 MiB      0.0 MiB           1               self._perf_timer.measure_time("assign_output")
+   274                                         
+   275    904.8 MiB      0.0 MiB           1               if reply.outputs is None or not reply.outputs:
+   276                                                         response = build_failure_reply("fail", "Outputs not found.")
+   277                                                     else:
+   278    904.8 MiB      0.0 MiB           1                   reply.status_enum = "complete"
+   279    904.8 MiB      0.0 MiB           1                   reply.message = "Success"
+   280                                         
+   281    904.9 MiB      0.1 MiB           1                   results = self._worker.prepare_outputs(reply)
+   282    904.9 MiB      0.0 MiB           2                   response = MessageHandler.build_response(
+   283    904.9 MiB      0.0 MiB           1                       status=reply.status_enum,
+   284    904.9 MiB      0.0 MiB           1                       message=reply.message,
+   285    904.9 MiB      0.0 MiB           1                       result=results,
+   286    904.9 MiB      0.0 MiB           1                       custom_attributes=None,
+   287                                                         )
+   288                                         
+   289    904.9 MiB      0.0 MiB           1               self._perf_timer.measure_time("build_reply")
+   290                                         
+   291    904.9 MiB      0.0 MiB           1               serialized_resp = MessageHandler.serialize_response(response)
+   292                                         
+   293    904.9 MiB      0.0 MiB           1               self._perf_timer.measure_time("serialize_resp")
+   294                                         
+   295    904.9 MiB      0.0 MiB           1               if request.callback:
+   296    904.9 MiB      0.1 MiB           1                   request.callback.send(serialized_resp)
+   297    904.9 MiB      0.0 MiB           1                   if reply.outputs:
+   298                                                             # send tensor data after response
+   299    904.9 MiB      0.0 MiB           2                       for output in reply.outputs:
+   300    904.9 MiB      0.0 MiB           1                           request.callback.send(output)
+   301    904.9 MiB      0.0 MiB           1               self._perf_timer.measure_time("send")
+   302                                         
+   303    904.9 MiB      0.0 MiB           1           self._perf_timer.end_timings()
+   304                                         
+   305    904.9 MiB      0.0 MiB           1           if self._perf_timer.max_length == 801:
+   306                                                     self._perf_timer.print_timings(True)
+
+_on_start: 0.0
+_on_iteration
+_can_shutdown: 0.0
+

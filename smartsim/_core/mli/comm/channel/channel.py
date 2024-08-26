@@ -29,29 +29,37 @@ from abc import ABC, abstractmethod
 
 from smartsim.log import get_logger
 
+# from memory_profiler import profile
+
 logger = get_logger(__name__)
 
 
 class CommChannelBase(ABC):
     """Base class for abstracting a message passing mechanism"""
 
+    # @profile
     def __init__(self, descriptor: t.Union[str, bytes]) -> None:
         """Initialize the CommChannel instance"""
         self._descriptor = descriptor
 
     @abstractmethod
+    # @profile
     def send(self, value: bytes) -> None:
         """Send a message through the underlying communication channel
 
         :param value: The value to send"""
 
+    # @profile
     @abstractmethod
+    # @profile
     def recv(self) -> t.List[bytes]:
         """Receieve a message through the underlying communication channel
 
         :returns: the received message"""
 
+    # @profile
     @property
+    # @profile
     def descriptor(self) -> bytes:
         """Return the channel descriptor for the underlying dragon channel"""
         if isinstance(self._descriptor, str):

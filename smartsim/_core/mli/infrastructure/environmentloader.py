@@ -31,6 +31,8 @@ from smartsim._core.mli.comm.channel.channel import CommChannelBase
 from smartsim._core.mli.infrastructure.storage.featurestore import FeatureStore
 from smartsim.log import get_logger
 
+# from memory_profiler import profile
+
 logger = get_logger(__name__)
 
 
@@ -39,6 +41,7 @@ class EnvironmentConfigLoader:
     Facilitates the loading of a FeatureStore and Queue into the WorkerManager.
     """
 
+    # @profile
     def __init__(
         self,
         featurestore_factory: t.Callable[[str], FeatureStore],
@@ -67,6 +70,7 @@ class EnvironmentConfigLoader:
         """A factory method to instantiate a concrete CommChannelBase
         for inference requests"""
 
+    # @profile
     def get_backbone(self) -> t.Optional[FeatureStore]:
         """Attach to the backbone feature store using the descriptor found in
         an environment variable. The backbone is a standalone, system-created
@@ -86,6 +90,7 @@ class EnvironmentConfigLoader:
         self.backbone = self._featurestore_factory(descriptor)
         return self.backbone
 
+    # @profile
     def get_queue(self) -> t.Optional[CommChannelBase]:
         """Attach to a queue-like communication channel using the descriptor
         found in an environment variable.

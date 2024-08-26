@@ -30,11 +30,13 @@ from .....log import get_logger
 from ...infrastructure.storage.featurestore import FeatureStore
 from ..worker.worker import MachineLearningWorkerBase
 from .requestdispatcher import RequestBatch
+# from memory_profiler import profile
 
 logger = get_logger(__name__)
 
 
 class WorkerDevice:
+    # @profile
     def __init__(self, name: str) -> None:
         """Wrapper around a device to keep track of loaded Models and availability
         :param name: name used by the toolkit to identify this device, e.g. ``cuda:0``
@@ -45,10 +47,12 @@ class WorkerDevice:
         """Dict of keys to models which are loaded on this device"""
 
     @property
+    # @profile
     def name(self) -> str:
         """The identifier of the device represented by this object"""
         return self._name
 
+    # @profile
     def add_model(self, key: str, model: t.Any) -> None:
         """Add a reference to a model loaded on this device and assign it a key
 
@@ -57,6 +61,7 @@ class WorkerDevice:
         """
         self._models[key] = model
 
+    # @profile
     def remove_model(self, key: str) -> None:
         """Remove the reference to a model loaded on this device
 
@@ -64,6 +69,7 @@ class WorkerDevice:
         """
         self._models.pop(key)
 
+    # @profile
     def get_model(self, key: str) -> t.Any:
         """Get the model corresponding to a given key
 
@@ -71,15 +77,18 @@ class WorkerDevice:
         """
         return self._models[key]
 
+    # @profile
     def __contains__(self, key: str) -> bool:
         return key in self._models
 
 
 class DeviceManager:
+    # @profile
     def __init__(self, device: WorkerDevice):
         self._device = device
         """Device managed by this object"""
 
+    # @profile
     def _load_model_on_device(
         self,
         worker: MachineLearningWorkerBase,
@@ -91,6 +100,7 @@ class DeviceManager:
         loaded_model = worker.load_model(batch, model_bytes, self._device.name)
         self._device.add_model(batch.model_key.key, loaded_model.model)
 
+    # @profile
     def get_device(
         self,
         worker: MachineLearningWorkerBase,
