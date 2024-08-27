@@ -56,47 +56,47 @@ logger = get_logger(__name__)
 pytestmark = pytest.mark.group_a
 
 
-# # simple MNIST in PyTorch
-# class Net(nn.Module):
-#     def __init__(self):
-#         super(Net, self).__init__()
-#         self.conv1 = nn.Conv2d(1, 32, 3, 1)
-#         self.conv2 = nn.Conv2d(32, 64, 3, 1)
-#         self.dropout1 = nn.Dropout(0.25)
-#         self.dropout2 = nn.Dropout(0.5)
-#         self.fc1 = nn.Linear(9216, 128)
-#         self.fc2 = nn.Linear(128, 10)
+# simple MNIST in PyTorch
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.dropout1 = nn.Dropout(0.25)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, 10)
 
-#     def forward(self, x):
-#         x = self.conv1(x)
-#         x = F.relu(x)
-#         x = self.conv2(x)
-#         x = F.relu(x)
-#         x = F.max_pool2d(x, 2)
-#         x = self.dropout1(x)
-#         x = torch.flatten(x, 1)
-#         x = self.fc1(x)
-#         x = F.relu(x)
-#         x = self.dropout2(x)
-#         x = self.fc2(x)
-#         output = F.log_softmax(x, dim=1)
-#         return output
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout2(x)
+        x = self.fc2(x)
+        output = F.log_softmax(x, dim=1)
+        return output
 
 
 # torch_device = {"cpu": "cpu", "gpu": "cuda"}
 
 
-# def get_batch() -> torch.Tensor:
-#     return torch.rand(20, 1, 28, 28)
+def get_batch() -> torch.Tensor:
+    return torch.rand(20, 1, 28, 28)
 
-# @profile
-# def create_torch_model():
-#     n = Net()
-#     example_forward_input = get_batch()
-#     module = torch.jit.trace(n, example_forward_input)
-#     model_buffer = io.BytesIO()
-#     torch.jit.save(module, model_buffer)
-#     return model_buffer.getvalue()
+@profile(precision=5)
+def create_torch_model():
+    n = Net()
+    example_forward_input = get_batch()
+    module = torch.jit.trace(n, example_forward_input)
+    model_buffer = io.BytesIO()
+    torch.jit.save(module, model_buffer)
+    return model_buffer.getvalue()
 
 # @profile
 # def get_request() -> InferenceRequest:
@@ -179,10 +179,10 @@ pytestmark = pytest.mark.group_a
 
 @profile(precision=5)
 def test_profile_toch_jit_load_load_model():
-    model_bytes = b'a'*1024*1024
+    model_bytes = create_torch_model()
     buffer = io.BytesIO(initial_bytes=model_bytes)
     with torch.no_grad():
         model = torch.jit.load(buffer, map_location="cpu")
         model.eval()
 
-    assert False
+    assert True

@@ -160,7 +160,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    197    904.5 MiB      0.0 MiB           2           for result_slice in execute_result.slices:
    198    904.4 MiB      0.0 MiB           1               transformed = []
    199    904.5 MiB      0.0 MiB           2               for cpu_item in cpu_predictions:
-   200    904.5 MiB      0.1 MiB           1                   transformed.append(cpu_item[result_slice].numpy().tobytes())
+   200    904.5 MiB      0.1 MiB           1                   transformed.append(cpu_item[result_slice].numpy().tobytes()) # tobytes conversion
    201                                         
    202                                                         # todo: need the shape from latest schemas added here.
    203    904.5 MiB      0.0 MiB           2                   transformed_list.append(
@@ -205,7 +205,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    316                                         
    317    377.2 MiB      0.0 MiB           1           try:
    318    377.2 MiB      0.0 MiB           1               feature_store = feature_stores[fsd]
-   319    671.7 MiB    294.5 MiB           1               raw_bytes: bytes = t.cast(bytes, feature_store[key]) #ALERT
+   319    671.7 MiB    294.5 MiB           1               raw_bytes: bytes = t.cast(bytes, feature_store[key]) #ALERT this comes from retrieving a value from ddict.
    320    671.7 MiB      0.0 MiB           1               return FetchModelResult(raw_bytes)
    321                                                 except FileNotFoundError as ex:
    322                                                     logger.exception(ex)

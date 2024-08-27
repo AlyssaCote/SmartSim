@@ -137,7 +137,7 @@ class ProtoClient:
 
 
 class ResNetWrapper:
-    # @profile
+    @profile(precision=5)
     def __init__(self, name: str, model: str):
         self._model = torch.jit.load(model)
         self._name = name
