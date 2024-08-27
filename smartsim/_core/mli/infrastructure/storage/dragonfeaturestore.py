@@ -36,7 +36,7 @@ from smartsim._core.mli.infrastructure.storage.featurestore import FeatureStore
 from smartsim.error import SmartSimError
 from smartsim.log import get_logger
 
-# from memory_profiler import profile
+from memory_profiler import profile
 
 logger = get_logger(__name__)
 
@@ -52,7 +52,7 @@ class DragonFeatureStore(FeatureStore):
         storage mechanism of the feature store"""
         self._storage = storage
 
-    # @profile
+    # @profile(precision=5)
     def __getitem__(self, key: str) -> t.Union[str, bytes]:
         """Retrieve an item using key
 
