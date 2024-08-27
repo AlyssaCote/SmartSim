@@ -138,7 +138,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    198                                                                 "Error acquiring device manager",
    199                                                             )
    200                                                         return
-   201    757.6 MiB    380.2 MiB           2               device: WorkerDevice = next( #ALERT
+   201    757.6 MiB    380.2 MiB           2               device: WorkerDevice = next( #ALERT but get_device calls _load_on_device, which calls fetch_model and load_model 
    202    377.4 MiB      0.0 MiB           2                   self._device_manager.get_device(
    203    377.4 MiB      0.0 MiB           1                       worker=self._worker,
    204    377.4 MiB      0.0 MiB           1                       batch=batch,
@@ -176,7 +176,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    236    757.6 MiB      0.0 MiB           1           transformed_input = batch.inputs
    237                                         
    238    757.6 MiB      0.0 MiB           1           try:
-   239    904.6 MiB    147.0 MiB           2               execute_result = self._worker.execute( #ALERT
+   239    904.6 MiB    147.0 MiB           2               execute_result = self._worker.execute( #ALERT execute should be checked
    240    757.6 MiB      0.0 MiB           1                   batch, model_result, transformed_input, device.name
    241                                                     )
    242                                                 except Exception as e:

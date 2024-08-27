@@ -46,7 +46,7 @@ from .worker import (
     TransformOutputResult,
 )
 
-# from memory_profiler import profile
+from memory_profiler import profile
 
 torch.set_num_threads(1)
 torch.set_num_interop_threads(4)
@@ -57,7 +57,7 @@ class TorchWorker(MachineLearningWorkerBase):
     """A worker that executes a PyTorch model."""
 
     @staticmethod
-    # @profile
+    # @profile(precision=5)
     def load_model(
         batch: RequestBatch, fetch_result: FetchModelResult, device: str
     ) -> LoadModelResult:
@@ -80,7 +80,7 @@ class TorchWorker(MachineLearningWorkerBase):
         return result
 
     @staticmethod
-    # @profile
+    @profile(precision=5)
     def transform_input(
         batch: RequestBatch,
         fetch_results: list[FetchInputResult],
@@ -137,7 +137,7 @@ class TorchWorker(MachineLearningWorkerBase):
 
     # pylint: disable-next=unused-argument
     @staticmethod
-    # @profile
+    # @profile(precision=5)
     def execute(
         batch: RequestBatch,
         load_result: LoadModelResult,
@@ -166,6 +166,14 @@ class TorchWorker(MachineLearningWorkerBase):
             )
 
         model: torch.nn.Module = load_result.model
+        #
+        #
+
+        #
+
+
+
+
         with torch.no_grad():
             model.eval()
             print("DEVICE IS HERE")

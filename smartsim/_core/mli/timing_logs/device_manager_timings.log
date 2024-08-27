@@ -25,8 +25,8 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
     96                                                 feature_stores: dict[str, FeatureStore],
     97                                             ) -> None:
     98                                         
-    99    671.7 MiB    294.4 MiB           1           model_bytes = worker.fetch_model(batch, feature_stores) #ALERT
-   100    855.4 MiB    183.7 MiB           1           loaded_model = worker.load_model(batch, model_bytes, self._device.name) #ALERT
+    99    671.7 MiB    294.4 MiB           1           model_bytes = worker.fetch_model(batch, feature_stores) #ALERT fetch_model needs ot be checked
+   100    855.4 MiB    183.7 MiB           1           loaded_model = worker.load_model(batch, model_bytes, self._device.name) #ALERT load_model needs to be checked
    101    855.4 MiB      0.0 MiB           1           self._device.add_model(batch.model_key.key, loaded_model.model)
 
 init: 0.0 MiB

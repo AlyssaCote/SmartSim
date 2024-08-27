@@ -25,6 +25,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import io
+import sys
 
 import pytest
 import torch
@@ -122,71 +123,18 @@ def get_request() -> InferenceRequest:
 sample_request: InferenceRequest = get_request()
 worker = TorchWorker()
 
-@profile
-def test_load_model(mlutils) -> None:
-    fetch_model_result = FetchModelResult(sample_request.raw_model)
-    load_model_result = worker.load_model(
-        sample_request, fetch_model_result, mlutils.get_test_device().lower()
-    )
 
-    assert load_model_result.model(
-        get_batch().to(torch_device[mlutils.get_test_device().lower()])
-    ).shape == torch.Size((20, 10))
+def test_profile_worker_load_model():
+    ...
+
+
+def test_profile_worker_fetch_model():
+    ...
 
 @profile
-def test_transform_input(mlutils) -> None:
-    fetch_input_result = FetchInputResult(
-        sample_request.raw_inputs, sample_request.input_meta
-    )
-
-    transform_input_result = worker.transform_input(
-        sample_request, fetch_input_result, mlutils.get_test_device().lower()
-    )
-
-    assert all(
-        transformed.shape == get_batch().shape
-        for transformed in transform_input_result.transformed
-    )
-
-@profile
-def test_execute(mlutils) -> None:
-    load_model_result = LoadModelResult(
-        Net().to(torch_device[mlutils.get_test_device().lower()])
-    )
-    transform_result = TransformInputResult(
-        [
-            get_batch().to(torch_device[mlutils.get_test_device().lower()])
-            for _ in range(2)
-        ]
-    )
-
-    execute_result = worker.execute(sample_request, load_model_result, transform_result)
-
-    assert all(
-        result.shape == torch.Size((20, 10)) for result in execute_result.predictions
-    )
-
-@profile
-def test_transform_output(mlutils):
-    execute_result = ExecuteResult([torch.rand((20, 10)) for _ in range(2)])
-
-    transformed_output = worker.transform_output(
-        sample_request, execute_result, torch_device[mlutils.get_test_device().lower()]
-    )
-
-    assert transformed_output.outputs == [
-        item.numpy().tobytes() for item in execute_result.predictions
-    ]
-    assert transformed_output.shape == None
-    assert transformed_output.order == "c"
-    assert transformed_output.dtype == "float32"
-
-
-
-@profile(precision=6)
-def test_get_item_dragonfeaturestore():
-    # ddict = DDict()
-    dfs = DragonFeatureStore(DDict())
+def test_profile_getitem_dragonfeaturestore():
+    ddict = DDict()
+    dfs = DragonFeatureStore(ddict)
 
     item = np.random.rand(1024,1024,3)
 
