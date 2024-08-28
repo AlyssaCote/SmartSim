@@ -195,7 +195,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    459    505.6 MiB      0.0 MiB           1                   self.dispatch(request)
    460    505.6 MiB      0.0 MiB           1                   self._perf_timer.measure_time("dispatch")
    461                                                 finally:
-   462    523.9 MiB     18.3 MiB           1               self.flush_requests() #ALERT flush_requests shuld be checked
+   462    523.9 MiB     18.3 MiB           1               self.flush_requests() #ALERT flush_requests shuld be checked, comes from transform_input
    463                                                     # TODO: implement this
    464                                                     # self.remove_queues()
    465                                         
@@ -238,7 +238,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    560                                                                 continue
    561    505.6 MiB      0.0 MiB           1                       self._perf_timer.measure_time("fetch_input")
    562    505.6 MiB      0.0 MiB           1                       try:
-   563    523.9 MiB     18.3 MiB           2                           transformed_inputs = self._worker.transform_input( #ALERT? not too bad but transform_input should be checked
+   563    523.9 MiB     18.3 MiB           2                           transformed_inputs = self._worker.transform_input( #ALERT? not too bad but transform_input should be checked, comes from mem_view[:alloc_size] = b"".join(
    564    505.6 MiB      0.0 MiB           1                               batch=batch,
    565    505.6 MiB      0.0 MiB           1                               fetch_results=fetch_results,
    566    505.6 MiB      0.0 MiB           1                               mem_pool=self._mem_pool,

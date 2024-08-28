@@ -137,7 +137,7 @@ class TorchWorker(MachineLearningWorkerBase):
 
     # pylint: disable-next=unused-argument
     @staticmethod
-    # @profile(precision=5)
+    @profile(precision=5)
     def execute(
         batch: RequestBatch,
         load_result: LoadModelResult,
@@ -166,14 +166,6 @@ class TorchWorker(MachineLearningWorkerBase):
             )
 
         model: torch.nn.Module = load_result.model
-        #
-        #
-
-        #
-
-
-
-
         with torch.no_grad():
             model.eval()
             print("DEVICE IS HERE")
@@ -181,7 +173,7 @@ class TorchWorker(MachineLearningWorkerBase):
             results = [
                 model(
                     *[
-                        tensor.to(device, non_blocking=True).detach()
+                        tensor.to(device, non_blocking=True, copy=False).detach()
                         for tensor in tensors
                     ]
                 )
@@ -195,7 +187,7 @@ class TorchWorker(MachineLearningWorkerBase):
         return execute_result
 
     @staticmethod
-    # @profile
+    # @profile(precision=5)
     def transform_output(
         batch: RequestBatch,
         execute_result: ExecuteResult,

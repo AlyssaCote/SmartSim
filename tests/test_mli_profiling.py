@@ -34,6 +34,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from dragon.data.ddict.ddict import DDict
+from dragon.managed_memory import MemoryAlloc, MemoryPool
 
 from smartsim._core.mli.infrastructure.storage.featurestore import FeatureStoreKey
 from smartsim._core.mli.infrastructure.storage.dragonfeaturestore import DragonFeatureStore
@@ -168,21 +169,41 @@ def create_torch_model():
 #         total_mem=total_mem,
 #     )
 
-#     item = np.random.rand(1024,1024,3).tobytes()
+#     item = np.random.rand(1024,1024,3)
 
 #     storage["key"] = item
 
 #     the_item = storage["key"]
 
-#     assert item == the_item
-#     assert type(item) == bytes
+#     assert np.array_equal(item, the_item)
+
+
+# @profile(precision=5)
+# def test_profile_torch_jit_load_load_model():
+#     model_bytes = create_torch_model()
+#     buffer = io.BytesIO(initial_bytes=model_bytes)
+#     with torch.no_grad():
+#         model = torch.jit.load(buffer)
+#         model.eval()
+
+#     assert True
+
+# @profile(precision=5)
+# def test_tobytes():
+
+#     item = np.random.rand(1024,1024,300)
+
+#     item.tobytes()
+
+#     assert type(item)==bytes
 
 @profile(precision=5)
-def test_profile_toch_jit_load_load_model():
-    model_bytes = create_torch_model()
-    buffer = io.BytesIO(initial_bytes=model_bytes)
-    with torch.no_grad():
-        model = torch.jit.load(buffer, map_location="cpu")
-        model.eval()
+def test_bytes_concat():
 
-    assert True
+    item = np.random.rand(1024,1024,300).tobytes()
+
+    item2 = np.random.rand(1024,1024,300).tobytes()
+
+    item = item+item2
+
+    assert type(item)==bytes

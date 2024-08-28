@@ -1,3 +1,32 @@
 
 
-_load_model_on_device calls fetch_model and load_model. These are
+Fetch model -> mem increase comes from retrieving value from ddict. raw_bytes: bytes = t.cast(bytes, feature_store[key])
+Load model -> mem increase comes from torch.jit.load
+Execute -> mem increase from 
+    model(
+            *[
+                tensor.to(device, non_blocking=True).detach()
+                for tensor in tensors
+            ]
+        )
+
+Flush requests -> mem increase comes from self._worker.transform_input
+Transform input -> mem increas from
+    mem_view[:alloc_size] = b"".join(
+        [
+                fetch_result.inputs[result_tensor_idx]
+                for fetch_result in fetch_results
+        ]
+    )
+
+
+Get_device-> mem increase comes from fetch and load model
+
+
+
+   127 380.48438 MiB   0.71094 MiB           2               mem_view[:alloc_size] = b"".join(
+   128 379.77344 MiB   0.00000 MiB           6                   [
+   129 379.77344 MiB   0.00000 MiB           1                       fetch_result.inputs[result_tensor_idx]
+   130 379.77344 MiB   0.00000 MiB           2                       for fetch_result in fetch_results
+   131                                                         ]
+   132                                                     )

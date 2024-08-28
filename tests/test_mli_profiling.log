@@ -1,0 +1,61 @@
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   181 378.05469 MiB 378.05469 MiB           1   @profile(precision=5)
+   182                                         def test_profile_torch_jit_load_load_model():
+   183 409.59766 MiB  31.54297 MiB           1       model_bytes = create_torch_model()
+   184 409.59766 MiB   0.00000 MiB           1       buffer = io.BytesIO(initial_bytes=model_bytes)
+   185 420.88281 MiB   0.00000 MiB           2       with torch.no_grad():
+   186 420.88281 MiB  11.28516 MiB           1           model = torch.jit.load(buffer, map_location="cpu")
+   187 420.88281 MiB   0.00000 MiB           1           model.eval()
+
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   158 381.73828 MiB 381.73828 MiB           1   @profile(precision=5)
+   159                                         def test_profile_ddict():
+   160 381.73828 MiB   0.00000 MiB           1       mgr_per_node = 1
+   161 381.73828 MiB   0.00000 MiB           1       num_nodes = 2
+   162 381.73828 MiB   0.00000 MiB           1       mem_per_node = 1024**3
+   163 381.73828 MiB   0.00000 MiB           1       total_mem = num_nodes * mem_per_node
+   164                                         
+   165 385.50000 MiB   3.76172 MiB           2       storage = DDict(
+   166 381.73828 MiB   0.00000 MiB           1           managers_per_node=mgr_per_node,
+   167 381.73828 MiB   0.00000 MiB           1           n_nodes=num_nodes,
+   168 381.73828 MiB   0.00000 MiB           1           total_mem=total_mem,
+   169                                             )
+   170                                         
+   171 409.63672 MiB  24.13672 MiB           1       item = np.random.rand(1024,1024,3)
+   172                                         
+   173 433.87109 MiB  24.23438 MiB           1       storage["key"] = item
+   174                                         
+   175 503.58984 MiB  69.71875 MiB           1       the_item = storage["key"]
+   176                                         
+   177 503.58984 MiB   0.00000 MiB           1       assert np.array_equal(item, the_item)
+
+   
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   158 379.80078 MiB 379.80078 MiB           1   @profile(precision=5)
+   159                                         def test_profile_ddict():
+   160 379.80078 MiB   0.00000 MiB           1       mgr_per_node = 1
+   161 379.80078 MiB   0.00000 MiB           1       num_nodes = 2
+   162 379.80078 MiB   0.00000 MiB           1       mem_per_node = 1024**3
+   163 379.80078 MiB   0.00000 MiB           1       total_mem = num_nodes * mem_per_node
+   164                                         
+   165 383.59766 MiB   3.79688 MiB           2       storage = DDict(
+   166 379.80078 MiB   0.00000 MiB           1           managers_per_node=mgr_per_node,
+   167 379.80078 MiB   0.00000 MiB           1           n_nodes=num_nodes,
+   168 379.80078 MiB   0.00000 MiB           1           total_mem=total_mem,
+   169                                             )
+   170                                         
+   171 407.84375 MiB  24.24609 MiB           1       item = np.random.rand(1024,1024,3).tobytes()
+   172                                         
+   173 455.96094 MiB  48.11719 MiB           1       storage["key"] = item
+   174                                         
+   175 504.06641 MiB  48.10547 MiB           1       the_item = storage["key"]
+   176                                         
+   177 504.06641 MiB   0.00000 MiB           1       assert item == the_item

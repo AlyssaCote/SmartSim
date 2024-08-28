@@ -129,7 +129,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    169    904.3 MiB      0.1 MiB           2           with torch.no_grad():
    170    758.0 MiB      0.0 MiB           1               model.eval(
    171    904.3 MiB      0.0 MiB           1               results = [
-   172    904.3 MiB    146.4 MiB           2                   model( #ALERT the problem seems to be on line 168.investigate further
+   172    904.3 MiB    146.4 MiB           2                   model( #ALERT
    173    758.0 MiB      0.0 MiB           6                       *[
    174    758.0 MiB      0.0 MiB           1                           tensor.to(device, non_blocking=True).detach()
    175    758.0 MiB      0.0 MiB           2                           for tensor in tensors

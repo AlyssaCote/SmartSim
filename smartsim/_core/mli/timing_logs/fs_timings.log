@@ -22,7 +22,7 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
     61                                                 :raises KeyError: if the key is not found in the feature store
     62                                                 :raises SmartSimError: if retrieval from the feature store fails"""
     63    377.1 MiB      0.0 MiB           1           try:
-    64    671.3 MiB    294.2 MiB           1               value: t.Union[str, bytes] = self._storage[key] #ALERT DragoFeaturestore.__getItem__ needs to be checked
+    64    671.3 MiB    294.2 MiB           1               value: t.Union[str, bytes] = self._storage[key] #ALERT DragoFeaturestore.__getitem__ needs to be checked. follow up with dragon about potential copies
     65    671.3 MiB      0.0 MiB           1               return value
     66                                                 except KeyError:
     67                                                     logger.warning(f"An unknown key was requested: {key}")

@@ -1,0 +1,198 @@
+from mock_app.py
+
+
+ResNetWrapper
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   140 381.00000 MiB 381.00000 MiB           1       @profile(precision=5)
+   141                                             def __init__(self, name: str, model: str):
+   142 572.09766 MiB 191.09766 MiB           1           self._model = torch.jit.load(model)
+   143 572.09766 MiB   0.00000 MiB           1           self._name = name
+   144 572.09766 MiB   0.00000 MiB           1           buffer = io.BytesIO()
+   145 572.53906 MiB   0.44141 MiB           1           scripted = torch.jit.trace(self._model, self.get_batch())
+   146 694.91406 MiB 122.37500 MiB           1           torch.jit.save(scripted, buffer)
+   147 694.91406 MiB   0.00000 MiB           1           self._serialized_model = buffer.getvalue()
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   149 549.98828 MiB 549.98828 MiB           1       @profile(precision=5)
+   150                                             def get_batch(self, batch_size: int = 32):
+   151 568.49219 MiB  18.50391 MiB           1           return torch.randn((batch_size, 3, 224, 224), dtype=torch.float32)
+
+model: 0.0
+name 0.0
+
+
+ProtoClient
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    63 672.26172 MiB 672.26172 MiB           1       @profile(precision=5)
+    64                                             def __init__(self, timing_on: bool):
+    65 672.26172 MiB   0.00000 MiB           1           comm = MPI.COMM_WORLD
+    66 672.26172 MiB   0.00000 MiB           1           rank = comm.Get_rank()
+    67 673.25781 MiB   0.99609 MiB           1           connect_to_infrastructure()
+    68 673.25781 MiB   0.00000 MiB           1           ddict_str = os.environ["_SMARTSIM_INFRA_BACKBONE"]
+    69 674.58594 MiB   1.32812 MiB           1           self._ddict = DDict.attach(ddict_str)
+    70 674.58594 MiB   0.00000 MiB           1           self._backbone_descriptor = DragonFeatureStore(self._ddict).descriptor
+    71 674.58594 MiB   0.00000 MiB           1           to_worker_fli_str = None
+    72 674.83984 MiB   0.00000 MiB           2           while to_worker_fli_str is None:
+    73 674.58594 MiB   0.00000 MiB           1               try:
+    74 674.83984 MiB   0.25391 MiB           1                   to_worker_fli_str = self._ddict["to_worker_fli"]
+    75 674.83984 MiB   0.00000 MiB           1                   self._to_worker_fli = fli.FLInterface.attach(to_worker_fli_str)
+    76                                                     except KeyError:
+    77                                                         time.sleep(1)
+    78 674.92188 MiB   0.08203 MiB           1           self._from_worker_ch = Channel.make_process_local()
+    79 674.92188 MiB   0.00000 MiB           1           self._from_worker_ch_serialized = self._from_worker_ch.serialize()
+    80 674.96094 MiB   0.03906 MiB           1           self._to_worker_ch = Channel.make_process_local()
+    81                                         
+    82 674.96094 MiB   0.00000 MiB           1           self.perf_timer: PerfTimer = PerfTimer(debug=False, timing_on=timing_on, prefix=f"a{rank}_")
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   133 675.36328 MiB 675.36328 MiB           1       @profile(precision=5)
+   134                                             def set_model(self, key: str, model: bytes):
+   135 773.45703 MiB  98.09375 MiB           1           self._ddict[key] = model
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    85 1039.48047 MiB 1039.48047 MiB           1       @profile(precision=5, stream=file)
+    86                                             def run_model(self, model: bytes | str, batch: torch.Tensor):
+    87 1039.48047 MiB   0.00000 MiB           1           tensors = [batch.numpy()]
+    88 1039.48047 MiB   0.00000 MiB           1           self.perf_timer.start_timings("batch_size", batch.shape[0])
+    89 1039.48047 MiB   0.00000 MiB           2           built_tensor_desc = MessageHandler.build_tensor_descriptor(
+    90 1039.48047 MiB   0.00000 MiB           1               "c", "float32", list(batch.shape)
+    91                                                 )
+    92 1039.48047 MiB   0.00000 MiB           1           self.perf_timer.measure_time("build_tensor_descriptor")
+    93 1039.48047 MiB   0.00000 MiB           1           if isinstance(model, str):
+    94 1039.48047 MiB   0.00000 MiB           1               model_arg = MessageHandler.build_model_key(model, self._backbone_descriptor)
+    95                                                 else:
+    96                                                     model_arg = MessageHandler.build_model(model, "resnet-50", "1.0")
+    97 1039.48047 MiB   0.00000 MiB           2           request = MessageHandler.build_request(
+    98 1039.48047 MiB   0.00000 MiB           1               reply_channel=self._from_worker_ch_serialized,
+    99 1039.48047 MiB   0.00000 MiB           1               model=model_arg,
+   100 1039.48047 MiB   0.00000 MiB           1               inputs=[built_tensor_desc],
+   101 1039.48047 MiB   0.00000 MiB           1               outputs=[],
+   102 1039.48047 MiB   0.00000 MiB           1               output_descriptors=[],
+   103 1039.48047 MiB   0.00000 MiB           1               custom_attributes=None,
+   104                                                 )
+   105 1039.48047 MiB   0.00000 MiB           1           self.perf_timer.measure_time("build_request")
+   106 1039.48047 MiB   0.00000 MiB           1           request_bytes = MessageHandler.serialize_request(request)
+   107 1039.48047 MiB   0.00000 MiB           1           self.perf_timer.measure_time("serialize_request")
+   108 1057.76953 MiB  18.28906 MiB           4           tensor_bytes = [tensor.tobytes() for tensor in tensors]
+   109 1057.76953 MiB   0.00000 MiB           1           self.perf_timer.measure_time("serialize_tensor")
+   110 1092.08203 MiB   0.00000 MiB           2           with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
+   111 1057.76953 MiB   0.00000 MiB           1               to_sendh.send_bytes(request_bytes)
+   112 1092.08203 MiB   0.00000 MiB           2               for tb in tensor_bytes:
+   113 1092.08203 MiB  34.31250 MiB           1                   to_sendh.send_bytes(tb)
+   114                                         
+   115 1092.08203 MiB   0.00000 MiB           1           self.perf_timer.measure_time("send")
+   116 1092.08203 MiB   0.00000 MiB           2           with self._from_worker_ch.recvh(timeout=None) as from_recvh:
+   117 1092.08203 MiB   0.00000 MiB           1               resp = from_recvh.recv_bytes(timeout=None)
+   118 1092.08203 MiB   0.00000 MiB           1               self.perf_timer.measure_time("receive_response")
+   119 1092.08203 MiB   0.00000 MiB           1               response = MessageHandler.deserialize_response(resp)
+   120 1092.08203 MiB   0.00000 MiB           1               self.perf_timer.measure_time("deserialize_response")
+   121 1092.08203 MiB   0.00000 MiB           1               data_blob: bytes = from_recvh.recv_bytes(timeout=None)
+   122 1092.08203 MiB   0.00000 MiB           1               self.perf_timer.measure_time("receive_tensor")
+   123 1092.08203 MiB   0.00000 MiB           2               result = torch.from_numpy(
+   124 1092.08203 MiB   0.00000 MiB           2                   numpy.frombuffer(
+   125 1092.08203 MiB   0.00000 MiB           1                       data_blob,
+   126 1092.08203 MiB   0.00000 MiB           1                       dtype=str(response.result.descriptors[0].dataType),
+   127                                                         )
+   128                                                     )
+   129 1092.08203 MiB   0.00000 MiB           1               self.perf_timer.measure_time("deserialize_tensor")
+   130                                         
+   131 1092.08203 MiB   0.00000 MiB           1           self.perf_timer.end_timings()
+   132 1092.08203 MiB   0.00000 MiB           1           return result
+
+
+
+
+
+
+
+
+
+   main
+
+    CHECK_RESULTS_AND_MAKE_ALL_SLOWER = False
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   164 383.62500 MiB 383.62500 MiB           1   @profile(precision=5, stream=file)
+   165                                         def main():
+   166                                         
+   167 383.62500 MiB   0.00000 MiB           1       parser = argparse.ArgumentParser("Mock application")
+   168 383.62500 MiB   0.00000 MiB           1       parser.add_argument("--device", default="cpu", type=str)
+   169 383.62500 MiB   0.00000 MiB           1       parser.add_argument("--log_max_batchsize", default=8, type=int)
+   170 383.62500 MiB   0.00000 MiB           1       args = parser.parse_args()
+   171                                         
+   172 675.50391 MiB 291.87891 MiB           1       resnet = ResNetWrapper("resnet50", f"resnet50.{args.device}.pt")
+   173                                         
+   174 678.31641 MiB   2.81250 MiB           1       client = ProtoClient(timing_on=True)
+   175 776.46484 MiB  98.14844 MiB           1       client.set_model(resnet.name, resnet.model)
+   176                                         
+   177 776.46484 MiB   0.00000 MiB           1       if CHECK_RESULTS_AND_MAKE_ALL_SLOWER:
+   178                                                 # TODO: adapt to non-Nvidia devices
+   179                                                 torch_device = args.device.replace("gpu", "cuda")
+   180                                                 pt_model = torch.jit.load(io.BytesIO(initial_bytes=(resnet.model))).to(torch_device)
+   181                                         
+   182 776.46484 MiB   0.00000 MiB           1       TOTAL_ITERATIONS = 1
+   183                                         
+   184 853.04297 MiB   0.00000 MiB           8       for log2_bsize in range(args.log_max_batchsize+1):
+   185 816.26562 MiB   0.00000 MiB           7           b_size: int = 2**log2_bsize
+   186 816.26562 MiB   0.00000 MiB           7           logger.info(f"Batch size: {b_size}")
+   187 853.04297 MiB   0.00000 MiB          15           for iteration_number in range(TOTAL_ITERATIONS + int(b_size==1)):
+   188 816.26562 MiB   0.00000 MiB           8               logger.info(f"Iteration: {iteration_number}")
+   189 852.77344 MiB  36.50781 MiB           8               sample_batch = resnet.get_batch(b_size)
+   190 853.04297 MiB  40.07031 MiB           8               remote_result = client.run_model(resnet.name, sample_batch)
+   191 853.04297 MiB   0.00000 MiB           8               logger.info(client.perf_timer.get_last("total_time"))
+   192 853.04297 MiB   0.00000 MiB           8               if CHECK_RESULTS_AND_MAKE_ALL_SLOWER:
+   193                                                         local_res = pt_model(sample_batch.to(torch_device))
+   194                                                         err_norm = torch.linalg.vector_norm(torch.flatten(remote_result).to(torch_device)-torch.flatten(local_res), ord=1).cpu()
+   195                                                         res_norm = torch.linalg.vector_norm(remote_result, ord=1).item()
+   196                                                         local_res_norm = torch.linalg.vector_norm(local_res, ord=1).item()
+   197                                                         logger.info(f"Avg norm of error {err_norm.item()/b_size} compared to result norm of {res_norm/b_size}:{local_res_norm/b_size}")
+   198                                                         torch.cuda.synchronize()
+
+
+    CHECK_RESULTS_AND_MAKE_ALL_SLOWER = True
+    Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   164 381.07422 MiB 381.07422 MiB           1   @profile(precision=5, stream=file)
+   165                                         def main():
+   166                                         
+   167 381.07422 MiB   0.00000 MiB           1       parser = argparse.ArgumentParser("Mock application")
+   168 381.07422 MiB   0.00000 MiB           1       parser.add_argument("--device", default="cpu", type=str)
+   169 381.07422 MiB   0.00000 MiB           1       parser.add_argument("--log_max_batchsize", default=8, type=int)
+   170 381.07422 MiB   0.00000 MiB           1       args = parser.parse_args()
+   171                                         
+   172 672.69141 MiB 291.61719 MiB           1       resnet = ResNetWrapper("resnet50", f"resnet50.{args.device}.pt")
+   173                                         
+   174 675.29688 MiB   2.60547 MiB           1       client = ProtoClient(timing_on=True)
+   175 773.38281 MiB  98.08594 MiB           1       client.set_model(resnet.name, resnet.model)
+   176                                         
+   177 773.38281 MiB   0.00000 MiB           1       if CHECK_RESULTS_AND_MAKE_ALL_SLOWER:
+   178                                                 # TODO: adapt to non-Nvidia devices
+   179 773.38281 MiB   0.00000 MiB           1           torch_device = args.device.replace("gpu", "cuda")
+   180 789.53516 MiB  16.15234 MiB           1           pt_model = torch.jit.load(io.BytesIO(initial_bytes=(resnet.model))).to(torch_device)
+   181                                         
+   182 789.53516 MiB   0.00000 MiB           1       TOTAL_ITERATIONS = 1
+   183                                         
+   184 1115.02734 MiB   0.00000 MiB           8       for log2_bsize in range(args.log_max_batchsize+1):
+   185 1059.61328 MiB   0.00000 MiB           7           b_size: int = 2**log2_bsize
+   186 1059.61328 MiB   0.00781 MiB           7           logger.info(f"Batch size: {b_size}")
+   187 1115.02734 MiB   0.00000 MiB          15           for iteration_number in range(TOTAL_ITERATIONS + int(b_size==1)):
+   188 1059.61328 MiB   0.00000 MiB           8               logger.info(f"Iteration: {iteration_number}")
+   189 1096.61719 MiB  45.35938 MiB           8               sample_batch = resnet.get_batch(b_size)
+   190 1115.02734 MiB  90.75391 MiB           8               remote_result = client.run_model(resnet.name, sample_batch)
+   191 1115.02734 MiB   0.00000 MiB           8               logger.info(client.perf_timer.get_last("total_time"))
+   192 1115.02734 MiB   0.00000 MiB           8               if CHECK_RESULTS_AND_MAKE_ALL_SLOWER:
+   193 1115.02734 MiB 155.43359 MiB           8                   local_res = pt_model(sample_batch.to(torch_device))
+   194 1115.02734 MiB  33.73047 MiB           8                   err_norm = torch.linalg.vector_norm(torch.flatten(remote_result).to(torch_device)-torch.flatten(local_res), ord=1).cpu()
+   195 1115.02734 MiB   0.00000 MiB           8                   res_norm = torch.linalg.vector_norm(remote_result, ord=1).item()
+   196 1115.02734 MiB   0.00000 MiB           8                   local_res_norm = torch.linalg.vector_norm(local_res, ord=1).item()
+   197 1115.02734 MiB   0.00000 MiB           8                   logger.info(f"Avg norm of error {err_norm.item()/b_size} compared to result norm of {res_norm/b_size}:{local_res_norm/b_size}")
+   198 1115.02734 MiB   0.20703 MiB           8                   torch.cuda.synchronize()

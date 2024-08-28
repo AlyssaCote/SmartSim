@@ -1,0 +1,299 @@
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    94 380.22266 MiB 380.22266 MiB           1   @profile(precision=5)
+    95                                         def create_torch_model():
+    96 384.73438 MiB   4.51172 MiB           1       n = Net()
+    97 384.98438 MiB   0.25000 MiB           1       example_forward_input = get_batch()
+    98 405.09375 MiB  20.10938 MiB           1       module = torch.jit.trace(n, [example_forward_input, example_forward_input])
+    99 405.09375 MiB   0.00000 MiB           1       model_buffer = io.BytesIO()
+   100 410.10547 MiB   5.01172 MiB           1       torch.jit.save(module, model_buffer)
+   101 410.10547 MiB   0.00000 MiB           1       return model_buffer.getvalue()
+
+
+   Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    90 384.73438 MiB 384.73438 MiB           1   @profile(precision=5)
+    91                                         def get_batch() -> torch.Tensor:
+    92 384.98438 MiB   0.25000 MiB           1       return torch.rand(20, 1, 28, 28)
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   103 379.49219 MiB 379.49219 MiB           1   @profile(precision=5)
+   104                                         def get_request() -> InferenceRequest:
+   105                                         
+   106 379.72656 MiB   0.23438 MiB           5       tensors = [get_batch() for _ in range(2)]
+   107 379.97266 MiB   0.24609 MiB           5       tensor_numpy = [tensor.numpy() for tensor in tensors]
+   108 379.97266 MiB   0.00000 MiB           8       serialized_tensors_descriptors = [
+   109 379.97266 MiB   0.00000 MiB           2           MessageHandler.build_tensor_descriptor("c", "float32", list(tensor.shape))
+   110 379.97266 MiB   0.00000 MiB           3           for tensor in tensors
+   111                                             ]
+   112                                         
+   113 410.10547 MiB   0.00000 MiB           2       return InferenceRequest(
+   114 380.22266 MiB   0.25000 MiB           1           model_key=FeatureStoreKey(key="model", descriptor="xyz"),
+   115 380.22266 MiB   0.00000 MiB           1           callback=None,
+   116 380.22266 MiB   0.00000 MiB           1           raw_inputs=tensor_numpy,
+   117 380.22266 MiB   0.00000 MiB           1           input_keys=None,
+   118 380.22266 MiB   0.00000 MiB           1           input_meta=serialized_tensors_descriptors,
+   119 380.22266 MiB   0.00000 MiB           1           output_keys=None,
+   120 410.10547 MiB  29.88281 MiB           1           raw_model=create_torch_model(),
+   121 410.10547 MiB   0.00000 MiB           1           batch_size=0,
+   122                                             )
+
+
+   Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   124 734.42578 MiB 734.42578 MiB           1   @profile(precision=5)
+   125                                         def get_request_batch_from_request(
+   126                                             request: InferenceRequest, inputs: t.Optional[TransformInputResult] = None
+   127                                         ) -> RequestBatch:
+   128                                         
+   129 734.42578 MiB   0.00000 MiB           1       return RequestBatch([request], inputs, request.model_key)
+
+
+
+LOAD_MODEL
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    59 410.15234 MiB 410.15234 MiB           1       @staticmethod
+    60                                             @profile(precision=5)
+    61                                             def load_model(
+    62                                                 batch: RequestBatch, fetch_result: FetchModelResult, device: str
+    63                                             ) -> LoadModelResult:
+    64 410.15234 MiB   0.00000 MiB           1           if fetch_result.model_bytes:
+    65 410.15234 MiB   0.00000 MiB           1               model_bytes = fetch_result.model_bytes
+    66                                                 elif batch.raw_model and batch.raw_model.data:
+    67                                                     model_bytes = batch.raw_model.data
+    68                                                 else:
+    69                                                     raise ValueError("Unable to load model without reference object")
+    70                                         
+    71 410.15234 MiB   0.00000 MiB           1           device_to_torch = {"cpu": "cpu", "gpu": "cuda"}
+    72 410.15234 MiB   0.00000 MiB           3           for old, new in device_to_torch.items():
+    73 410.15234 MiB   0.00000 MiB           2               device = device.replace(old, new)
+    74                                         
+    75 410.15234 MiB   0.00000 MiB           1           buffer = io.BytesIO(initial_bytes=model_bytes)
+    76 539.26562 MiB   0.00000 MiB           2           with torch.no_grad():
+    77 539.26562 MiB 129.11328 MiB           1               model = torch.jit.load(buffer, map_location=device)  # type: ignore
+    78 539.26562 MiB   0.00000 MiB           1               model.eval()
+    79 539.26562 MiB   0.00000 MiB           1           result = LoadModelResult(model)
+    80 539.26562 MiB   0.00000 MiB           1           return result
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   136 410.15234 MiB 410.15234 MiB           1   @profile(precision=5)
+   137                                         def test_load_model(mlutils) -> None:
+   138 410.15234 MiB   0.00000 MiB           1       fetch_model_result = FetchModelResult(sample_request.raw_model)
+   139 539.26562 MiB 129.11328 MiB           2       load_model_result = worker.load_model(
+   140 410.15234 MiB   0.00000 MiB           1           sample_request_batch, fetch_model_result, mlutils.get_test_device().lower()
+   141                                             )
+   142                                         
+   143 727.44141 MiB 188.17578 MiB           8       assert load_model_result.model(
+   144                                                 get_batch().to(torch_device[mlutils.get_test_device().lower()]),
+   145                                                 get_batch().to(torch_device[mlutils.get_test_device().lower()]),
+   146 727.44141 MiB   0.00000 MiB           7       ).shape == torch.Size((20, 10))
+
+
+EXECUTE/TRANSFORM_INPUT because the test for it isn't working
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    82 729.72266 MiB 729.72266 MiB           1       @staticmethod
+    83                                             @profile(precision=5)
+    84                                             def transform_input(
+    85                                                 batch: RequestBatch,
+    86                                                 fetch_results: list[FetchInputResult],
+    87                                                 mem_pool: MemoryPool,
+    88                                             ) -> TransformInputResult:
+    89 729.72266 MiB   0.00000 MiB           1           results: list[torch.Tensor] = []
+    90 729.72266 MiB   0.00000 MiB           1           total_samples = 0
+    91 729.72266 MiB   0.00000 MiB           1           slices: list[slice] = []
+    92                                         
+    93 729.72266 MiB   0.00000 MiB           1           all_dims: list[list[int]] = []
+    94 729.72266 MiB   0.00000 MiB           1           all_dtypes: list[str] = []
+    95 729.72266 MiB   0.00000 MiB           1           if fetch_results[0].meta is None:
+    96                                                     raise ValueError("Cannot reconstruct tensor without meta information")
+    97                                                 # Traverse inputs to get total number of samples and compute slices
+    98                                                 # Assumption: first dimension is samples, all tensors in the same input
+    99                                                 # have same number of samples
+   100                                                 # thus we only look at the first tensor for each input
+   101 729.72266 MiB   0.00000 MiB           2           for res_idx, fetch_result in enumerate(fetch_results):
+   102 729.72266 MiB   0.00000 MiB          10               if fetch_result.meta is None or any(
+   103 729.72266 MiB   0.00000 MiB           3                   item_meta is None for item_meta in fetch_result.meta
+   104                                                     ):
+   105                                                         raise ValueError("Cannot reconstruct tensor without meta information")
+   106 729.72266 MiB   0.00000 MiB           1               first_tensor_desc: tensor_capnp.TensorDescriptor = fetch_result.meta[0]
+   107 729.72266 MiB   0.00000 MiB           1               num_samples = first_tensor_desc.dimensions[0]
+   108 729.72266 MiB   0.00000 MiB           1               slices.append(slice(total_samples, total_samples + num_samples))
+   109 729.72266 MiB   0.00000 MiB           1               total_samples = total_samples + num_samples
+   110                                         
+   111 729.72266 MiB   0.00000 MiB           1               if res_idx == len(fetch_results) - 1:
+   112                                                         # For each tensor in the last input, get remaining dimensions
+   113                                                         # Assumptions: all inputs have the same number of tensors and
+   114                                                         # last N-1 dimensions match across inputs for corresponding tensors
+   115                                                         # thus: resulting array will be of size (num_samples, all_other_dims)
+   116 729.72266 MiB   0.00000 MiB           3                   for item_meta in fetch_result.meta:
+   117 729.72266 MiB   0.00000 MiB           2                       tensor_desc: tensor_capnp.TensorDescriptor = item_meta
+   118 729.72266 MiB   0.00000 MiB           2                       tensor_dims = list(tensor_desc.dimensions)
+   119 729.72266 MiB   0.00000 MiB           2                       all_dims.append([total_samples, *tensor_dims[1:]])
+   120 729.72266 MiB   0.00000 MiB           2                       all_dtypes.append(str(tensor_desc.dataType))
+   121                                         
+   122 729.78125 MiB   0.00000 MiB           3           for result_tensor_idx, (dims, dtype) in enumerate(zip(all_dims, all_dtypes)):
+   123 729.78125 MiB   0.00000 MiB           2               itemsize = np.empty((1), dtype=dtype).itemsize
+   124 729.78125 MiB   0.00000 MiB           2               alloc_size = int(np.prod(dims) * itemsize)
+   125 729.78125 MiB   0.00000 MiB           2               mem_alloc = mem_pool.alloc(alloc_size)
+   126 729.78125 MiB   0.00000 MiB           2               mem_view = mem_alloc.get_memview()
+   127 729.78125 MiB   0.05859 MiB           4               mem_view[:alloc_size] = b"".join(
+   128 729.78125 MiB   0.00000 MiB          12                   [
+   129 729.78125 MiB   0.00000 MiB           2                       fetch_result.inputs[result_tensor_idx]
+   130 729.78125 MiB   0.00000 MiB           4                       for fetch_result in fetch_results
+   131                                                         ]
+   132                                                     )
+   133                                         
+   134 729.78125 MiB   0.00000 MiB           2               results.append(mem_alloc.serialize())
+   135                                         
+   136 729.78125 MiB   0.00000 MiB           1           return TransformInputResult(results, slices, all_dims)
+
+
+   Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   139 729.78125 MiB 729.78125 MiB           1       @staticmethod
+   140                                             @profile(precision=5)
+   141                                             def execute(
+   142                                                 batch: RequestBatch,
+   143                                                 load_result: LoadModelResult,
+   144                                                 transform_result: TransformInputResult,
+   145                                                 device: str,
+   146                                             ) -> ExecuteResult:
+   147 729.78125 MiB   0.00000 MiB           1           if not load_result.model:
+   148                                                     raise SmartSimError("Model must be loaded to execute")
+   149 729.78125 MiB   0.00000 MiB           1           device_to_torch = {"cpu": "cpu", "gpu": "cuda"}
+   150 729.78125 MiB   0.00000 MiB           3           for old, new in device_to_torch.items():
+   151 729.78125 MiB   0.00000 MiB           2               device = device.replace(old, new)
+   152                                         
+   153 729.78125 MiB   0.00000 MiB           1           tensors = []
+   154 729.78125 MiB   0.00000 MiB           1           mem_allocs = []
+   155 729.91406 MiB   0.00000 MiB           4           for transformed, dims in zip(
+   156 729.78125 MiB   0.00000 MiB           1               transform_result.transformed, transform_result.dims
+   157                                                 ):
+   158 729.91406 MiB   0.00000 MiB           2               mem_alloc = MemoryAlloc.attach(transformed)
+   159 729.91406 MiB   0.00000 MiB           2               mem_allocs.append(mem_alloc)
+   160 729.91406 MiB   0.00000 MiB           4               tensors.append(
+   161 729.91406 MiB   0.13281 MiB           4                   torch.from_numpy(
+   162 729.91406 MiB   0.00000 MiB           4                       np.frombuffer(
+   163 729.91406 MiB   0.00000 MiB           2                           mem_alloc.get_memview()[0 : np.prod(dims) * 4], dtype=np.float32
+   164 729.91406 MiB   0.00000 MiB           2                       ).reshape(dims)
+   165                                                         )
+   166                                                     )
+   167                                         
+   168 729.91406 MiB   0.00000 MiB           1           model: torch.nn.Module = load_result.model
+   169                                                 #
+   170                                                 #
+   171                                         
+   172                                                 #
+   173                                         
+   174                                         
+   175                                         
+   176                                         
+   177 729.91406 MiB   0.00000 MiB           2           with torch.no_grad():
+   178 729.91406 MiB   0.00000 MiB           1               model.eval()
+   179 729.91406 MiB   0.00000 MiB           1               print("DEVICE IS HERE")
+   180 729.91406 MiB   0.00000 MiB           1               print(device)
+   181 729.91406 MiB   0.00000 MiB           1               results = [
+   182 729.91406 MiB   0.00000 MiB           2                   model(
+   183 729.91406 MiB   0.00000 MiB           8                       *[
+   184 729.91406 MiB   0.00000 MiB           2                           tensor.to(device, non_blocking=True).detach()
+   185 729.91406 MiB   0.00000 MiB           3                           for tensor in tensors
+   186                                                             ]
+   187                                                         )
+   188                                                     ]
+   189                                         
+   190 729.91406 MiB   0.00000 MiB           1           transform_result.transformed = []
+   191                                         
+   192 729.91406 MiB   0.00000 MiB           1           execute_result = ExecuteResult(results, transform_result.slices)
+   193 729.91406 MiB   0.00000 MiB           3           for mem_alloc in mem_allocs:
+   194 729.91406 MiB   0.00000 MiB           2               mem_alloc.free()
+   195 729.91406 MiB   0.00000 MiB           1           return execute_result
+
+
+   Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   183 725.36328 MiB 725.36328 MiB           1   @profile(precision=5)
+   184                                         def test_execute(mlutils) -> None:
+   185 729.57031 MiB   0.00000 MiB           2       load_model_result = LoadModelResult(
+   186 729.57031 MiB   4.20703 MiB           1           Net().to(torch_device[mlutils.get_test_device().lower()])
+   187                                             )
+   188 729.57031 MiB   0.00000 MiB           2       fetch_input_result = FetchInputResult(
+   189 729.57031 MiB   0.00000 MiB           1           sample_request.raw_inputs, sample_request.input_meta
+   190                                             )
+   191                                         
+   192 729.57031 MiB   0.00000 MiB           1       request_batch = get_request_batch_from_request(sample_request, fetch_input_result)
+   193                                         
+   194 729.72266 MiB   0.15234 MiB           1       mem_pool = MemoryPool.attach(dragon_gs_pool.create(1024**2).sdesc)
+   195                                         
+   196 729.78125 MiB   0.05859 MiB           2       transform_result = worker.transform_input(
+   197 729.72266 MiB   0.00000 MiB           1           request_batch, [fetch_input_result], mem_pool
+   198                                             )
+   199                                         
+   200 729.91406 MiB   0.13281 MiB           2       execute_result = worker.execute(
+   201 729.78125 MiB   0.00000 MiB           1           request_batch,
+   202 729.78125 MiB   0.00000 MiB           1           load_model_result,
+   203 729.78125 MiB   0.00000 MiB           1           transform_result,
+   204 729.78125 MiB   0.00000 MiB           1           mlutils.get_test_device().lower(),
+   205                                             )
+   206                                         
+   207 729.91406 MiB   0.00000 MiB           8       assert all(
+   208                                                 result.shape == torch.Size((20, 10)) for result in execute_result.predictions
+   209 729.91406 MiB   0.00000 MiB           3       )
+   210                                         
+   211 729.78125 MiB  -0.13281 MiB           1       mem_pool.destroy()
+
+
+
+
+   TRANSFORM_OUTPUT
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   197 729.27344 MiB 729.27344 MiB           1       @staticmethod
+   198                                             @profile(precision=5)
+   199                                             def transform_output(
+   200                                                 batch: RequestBatch,
+   201                                                 execute_result: ExecuteResult,
+   202                                             ) -> list[TransformOutputResult]:
+   203 729.27344 MiB   0.00000 MiB           1           transformed_list: list[TransformOutputResult] = []
+   204 729.27344 MiB   0.00000 MiB           8           cpu_predictions = [
+   205 729.27344 MiB   0.00000 MiB           3               prediction.cpu() for prediction in execute_result.predictions
+   206                                                 ]
+   207 729.27344 MiB   0.00000 MiB           2           for result_slice in execute_result.slices:
+   208 729.27344 MiB   0.00000 MiB           1               transformed = []
+   209 729.27344 MiB   0.00000 MiB           3               for cpu_item in cpu_predictions:
+   210 729.27344 MiB   0.00000 MiB           2                   transformed.append(cpu_item[result_slice].numpy().tobytes())
+   211                                         
+   212                                                         # todo: need the shape from latest schemas added here.
+   213 729.27344 MiB   0.00000 MiB           4                   transformed_list.append(
+   214 729.27344 MiB   0.00000 MiB           2                       TransformOutputResult(transformed, None, "c", "float32")
+   215                                                         )  # fixme
+   216                                         
+   217 729.27344 MiB   0.00000 MiB           1           execute_result.predictions = []
+   218                                         
+   219 729.27344 MiB   0.00000 MiB           1           return transformed_list
+
+
+
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   213 729.25391 MiB 729.25391 MiB           1   @profile(precision=5)
+   214                                         def test_transform_output(mlutils):
+   215 729.25391 MiB   0.00000 MiB           5       tensors = [torch.rand((20, 10)) for _ in range(2)]
+   216 729.25391 MiB   0.00000 MiB           1       execute_result = ExecuteResult(tensors, [slice(0, 20)])
+   217                                         
+   218 729.27344 MiB   0.01953 MiB           1       transformed_output = worker.transform_output(sample_request_batch, execute_result) ??
+   219                                         
+   220 729.27344 MiB   0.00000 MiB           5       assert transformed_output[0].outputs == [item.numpy().tobytes() for item in tensors]
+   221 729.27344 MiB   0.00000 MiB           1       assert transformed_output[0].shape == None
+   222 729.27344 MiB   0.00000 MiB           1       assert transformed_output[0].order == "c"
+   223 729.27344 MiB   0.00000 MiB           1       assert transformed_output[0].dtype == "float32"

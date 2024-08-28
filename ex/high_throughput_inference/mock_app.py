@@ -57,10 +57,10 @@ torch.set_num_threads(1)
 
 logger = get_logger("App")
 
-CHECK_RESULTS_AND_MAKE_ALL_SLOWER = False
+CHECK_RESULTS_AND_MAKE_ALL_SLOWER = True
 
 class ProtoClient:
-    # @profile
+    # @profile(precision=5)
     def __init__(self, timing_on: bool):
         comm = MPI.COMM_WORLD
         rank = comm.Get_rank()
@@ -81,7 +81,8 @@ class ProtoClient:
 
         self.perf_timer: PerfTimer = PerfTimer(debug=False, timing_on=timing_on, prefix=f"a{rank}_")
 
-    @profile
+    file = open('runmodel_log.log', 'w')
+    @profile(precision=5, stream=file)
     def run_model(self, model: bytes | str, batch: torch.Tensor):
         tensors = [batch.numpy()]
         self.perf_timer.start_timings("batch_size", batch.shape[0])
@@ -130,14 +131,14 @@ class ProtoClient:
         self.perf_timer.end_timings()
         return result
 
-    # @profile
+    # @profile(precision=5)
     def set_model(self, key: str, model: bytes):
         self._ddict[key] = model
 
 
 
 class ResNetWrapper:
-    @profile(precision=5)
+    # @profile(precision=5)
     def __init__(self, name: str, model: str):
         self._model = torch.jit.load(model)
         self._name = name
@@ -146,21 +147,23 @@ class ResNetWrapper:
         torch.jit.save(scripted, buffer)
         self._serialized_model = buffer.getvalue()
 
-    # @profile
+    # @profile(precision=5)
     def get_batch(self, batch_size: int = 32):
         return torch.randn((batch_size, 3, 224, 224), dtype=torch.float32)
 
     @property
-    # @profile
+    # @profile(precision=5)
     def model(self):
         return self._serialized_model
 
     @property
-    # @profile
+    # @profile(precision=5)
     def name(self):
         return self._name
 
-if __name__ == "__main__":
+# file = open('main_log.log', 'w')
+# @profile(precision=5, stream=file)
+def main():
 
     parser = argparse.ArgumentParser("Mock application")
     parser.add_argument("--device", default="cpu", type=str)
@@ -196,3 +199,40 @@ if __name__ == "__main__":
                 torch.cuda.synchronize()
 
     client.perf_timer.print_timings(to_file=True)
+
+if __name__ == "__main__":
+    main()
+    # parser = argparse.ArgumentParser("Mock application")
+    # parser.add_argument("--device", default="cpu", type=str)
+    # parser.add_argument("--log_max_batchsize", default=8, type=int)
+    # args = parser.parse_args()
+
+    # resnet = ResNetWrapper("resnet50", f"resnet50.{args.device}.pt")
+
+    # client = ProtoClient(timing_on=True)
+    # client.set_model(resnet.name, resnet.model)
+
+    # if CHECK_RESULTS_AND_MAKE_ALL_SLOWER:
+    #     # TODO: adapt to non-Nvidia devices
+    #     torch_device = args.device.replace("gpu", "cuda")
+    #     pt_model = torch.jit.load(io.BytesIO(initial_bytes=(resnet.model))).to(torch_device)
+
+    # TOTAL_ITERATIONS = 1
+
+    # for log2_bsize in range(args.log_max_batchsize+1):
+    #     b_size: int = 2**log2_bsize
+    #     logger.info(f"Batch size: {b_size}")
+    #     for iteration_number in range(TOTAL_ITERATIONS + int(b_size==1)):
+    #         logger.info(f"Iteration: {iteration_number}")
+    #         sample_batch = resnet.get_batch(b_size)
+    #         remote_result = client.run_model(resnet.name, sample_batch)
+    #         logger.info(client.perf_timer.get_last("total_time"))
+    #         if CHECK_RESULTS_AND_MAKE_ALL_SLOWER:
+    #             local_res = pt_model(sample_batch.to(torch_device))
+    #             err_norm = torch.linalg.vector_norm(torch.flatten(remote_result).to(torch_device)-torch.flatten(local_res), ord=1).cpu()
+    #             res_norm = torch.linalg.vector_norm(remote_result, ord=1).item()
+    #             local_res_norm = torch.linalg.vector_norm(local_res, ord=1).item()
+    #             logger.info(f"Avg norm of error {err_norm.item()/b_size} compared to result norm of {res_norm/b_size}:{local_res_norm/b_size}")
+    #             torch.cuda.synchronize()
+
+    # client.perf_timer.print_timings(to_file=True)
