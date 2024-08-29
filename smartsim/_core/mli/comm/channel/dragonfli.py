@@ -32,6 +32,7 @@ import dragon.channels as dch
 
 import base64
 import typing as t
+import cloudpickle as cp
 
 import smartsim._core.mli.comm.channel.channel as cch
 from smartsim.log import get_logger
@@ -66,16 +67,23 @@ class DragonFLIChannel(cch.CommChannelBase):
         """Receieve a message through the underlying communication channel
 
         :returns: the received message"""
-        messages = []
-        eot = False
         with self._fli.recvh(timeout=0.001) as recvh:
-            while not eot:
-                try:
-                    message, _ = recvh.recv_bytes(timeout=None)
-                    messages.append(message)
-                except fli.FLIEOT:
-                    eot = True
-        return messages
+            try:
+                header, _ = recvh.recv_bytes(timeout=None)
+                received_tensors = cp.load(file=fli.PickleReadAdapter(recvh=recvh))
+                return header, received_tensors
+            except Exception:
+                return None, None
+    
+    # def recv_header(self):
+    #     with self._fli.recvh(timeout=0.001) as recvh:
+    #         try:
+    #             message, _ = recvh.recv_bytes(timeout=None)
+    #             return message
+    #         except Exception:
+    #             return None
+            
+
 
     @classmethod
     def from_descriptor(

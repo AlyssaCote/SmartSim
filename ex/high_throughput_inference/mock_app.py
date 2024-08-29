@@ -41,6 +41,8 @@ import numpy
 import os
 import time
 import torch
+import pickle
+import cloudpickle as cp
 
 from mpi4py import MPI
 from smartsim._core.mli.infrastructure.storage.dragonfeaturestore import (
@@ -105,8 +107,9 @@ class ProtoClient:
             to_sendh.send_bytes(request_bytes)
             self.perf_timer.measure_time("send_request")
             for tensor in tensors:
-                to_sendh.send_bytes(tensor.tobytes()) #TODO NOT FAST ENOUGH!!!
+                cp.dump(tensor, file=fli.PickleWriteAdapter(sendh=to_sendh), protocol=pickle.HIGHEST_PROTOCOL)
         self.perf_timer.measure_time("send_tensors")
+
         with self._from_worker_ch.recvh(timeout=None) as from_recvh:
             resp = from_recvh.recv_bytes(timeout=None)
             self.perf_timer.measure_time("receive_response")

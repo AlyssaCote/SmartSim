@@ -317,19 +317,19 @@ class RequestDispatcher(Service):
         """
         try:
             self._perf_timer.set_active(True)
-            bytes_list: t.List[bytes] = self._incoming_channel.recv()
+            request_bytes, tensor_bytes_list = self._incoming_channel.recv()
         except Exception:
             self._perf_timer.set_active(False)
         else:
-            if not bytes_list:
+            if not request_bytes and not tensor_bytes_list:
                 exception_handler(
                     ValueError("No request data found"),
                     None,
                     "No request data found.",
                 )
 
-            request_bytes = bytes_list[0]
-            tensor_bytes_list = bytes_list[1:]
+            # request_bytes = bytes_list[0]
+            # tensor_bytes_list = bytes_list[1:]
             self._perf_timer.start_timings()
 
             request = self._worker.deserialize_message(
