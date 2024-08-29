@@ -27,17 +27,25 @@
 import io
 import sys
 
+import numpy as np
 import pytest
 import torch
-from torch import nn
-from torch.nn import functional as F
-import numpy as np
-
 from dragon.data.ddict.ddict import DDict
 from dragon.managed_memory import MemoryAlloc, MemoryPool
+from memory_profiler import profile
+from torch import nn
+from torch.nn import functional as F
 
+import pickle
+import cloudpickle as cp
+
+from dragon import fli
+from dragon.channels import Channel
+
+from smartsim._core.mli.infrastructure.storage.dragonfeaturestore import (
+    DragonFeatureStore,
+)
 from smartsim._core.mli.infrastructure.storage.featurestore import FeatureStoreKey
-from smartsim._core.mli.infrastructure.storage.dragonfeaturestore import DragonFeatureStore
 from smartsim._core.mli.infrastructure.worker.torch_worker import TorchWorker
 from smartsim._core.mli.infrastructure.worker.worker import (
     ExecuteResult,
@@ -49,8 +57,6 @@ from smartsim._core.mli.infrastructure.worker.worker import (
 )
 from smartsim._core.mli.message_handler import MessageHandler
 from smartsim.log import get_logger
-
-from memory_profiler import profile
 
 logger = get_logger(__name__)
 # The tests in this file belong to the group_a group
@@ -156,29 +162,29 @@ pytestmark = pytest.mark.group_a
 #     assert np.array_equal(item, the_item)
 
 
-@profile(precision=5)
-def test_profile_ddict():
-    mgr_per_node = 1
-    num_nodes = 2
-    mem_per_node = 1024**3
-    total_mem = num_nodes * mem_per_node
+# @profile(precision=5)
+# def test_profile_ddict():
+#     mgr_per_node = 1
+#     num_nodes = 2
+#     mem_per_node = 1024**3
+#     total_mem = num_nodes * mem_per_node
 
-    storage = DDict(
-        managers_per_node=mgr_per_node,
-        n_nodes=num_nodes,
-        total_mem=total_mem,
-    )
+#     storage = DDict(
+#         managers_per_node=mgr_per_node,
+#         n_nodes=num_nodes,
+#         total_mem=total_mem,
+#     )
 
-    item = np.random.rand(1024,1024,3).tobytes()
+#     item = np.random.rand(1024,1024,3).tobytes()
 
-    storage["key_1"] = item
-    storage["key_2"] = item
-    storage["key_3"] = item
-    storage["key_4"] = item
+#     storage["key_1"] = item
+#     storage["key_2"] = item
+#     storage["key_3"] = item
+#     storage["key_4"] = item
 
-    the_item = storage["key_1"]
+#     the_item = storage["key_1"]
 
-    assert item == the_item
+#     assert item == the_item
 
     # assert np.array_equal(item, the_item)
 
@@ -212,3 +218,50 @@ def test_profile_ddict():
 #     item = item+item2
 
 #     assert type(item)==bytes
+
+
+@profile
+def test_send_bytes_malloc():
+    tensors = np.random.rand(224,224,3,128)
+    to_worker_channel = Channel.make_process_local()
+    to_worker_fli = fli.FLInterface(main_ch=to_worker_channel, manager_ch=None)
+    with to_worker_fli.sendh(timeout=None, stream_channel=to_worker_channel) as to_sendh:
+        to_sendh.send_bytes(b"request_bytes")
+        to_sendh.send_bytes(tensors.tobytes())
+    all_bytes = []
+    with to_worker_fli.recvh(timeout=None) as from_recvh:
+        while True:
+            try:
+                message, _ = from_recvh.recv_bytes(timeout=None)
+                all_bytes.append(message)
+            except fli.FLIEOT as exc:
+                break
+    req = all_bytes[0]
+    assert req == b'request_bytes'
+    tensor_bytes = all_bytes[1:]
+    result = []
+    for tensor in tensor_bytes:
+        result.append(
+            torch.from_numpy(np.frombuffer(tensor))
+            .to('cpu')
+        )
+
+
+
+
+@profile
+def test_pickle_malloc():
+    tensors = np.random.rand(224,224,3,128)
+
+    to_worker_channel = Channel.make_process_local()
+    to_worker_fli = fli.FLInterface(main_ch=to_worker_channel, manager_ch=None)
+
+    with to_worker_fli.sendh(timeout=None, stream_channel=Tru) as to_sendh:
+        to_sendh.send_bytes(b"request_bytes")
+        cp.dump(tensors, file=fli.PickleWriteAdapter(sendh=to_sendh), protocol=pickle.HIGHEST_PROTOCOL)
+
+    with to_worker_fli.recvh(timeout=None) as from_recvh:
+        received_request_bytes, _ = from_recvh.recv_bytes()
+        received_tensor = cp.load(file=fli.PickleReadAdapter(recvh=from_recvh))
+    
+    assert received_request_bytes == b'request_bytes'

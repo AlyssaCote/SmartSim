@@ -74,3 +74,69 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    176 355.33984 MiB  24.32812 MiB           1       the_item = storage["key"]
 
    
+
+
+
+
+
+
+
+
+
+
+   old pickle adpater test logs
+   send_bytes:
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   186    301.1 MiB    301.1 MiB           1   @profile
+   187                                         def test_send_bytes_malloc():
+   188    448.1 MiB    147.0 MiB           1       tensors = np.random.rand(224,224,3,128)
+   189                                         
+   190    450.1 MiB      2.0 MiB           1       to_worker_channel = Channel.make_process_local()
+   191    450.1 MiB      0.0 MiB           1       to_worker_fli = fli.FLInterface(main_ch=to_worker_channel, manager_ch=None)
+   192                                         
+   193    597.4 MiB      0.0 MiB           2       with to_worker_fli.sendh(timeout=None, stream_channel=to_worker_channel) as to_sendh:
+   194    450.1 MiB      0.0 MiB           1           to_sendh.send_bytes(b"request_bytes")
+   195    597.4 MiB    147.3 MiB           1           to_sendh.send_bytes(tensors.tobytes())
+   196                                         
+   197                                             
+   198    597.4 MiB      0.0 MiB           1       all_bytes = []
+   199    744.4 MiB      0.0 MiB           2       with to_worker_fli.recvh(timeout=None) as from_recvh:
+   200    744.4 MiB      0.0 MiB           3           while True:
+   201    744.4 MiB      0.0 MiB           3               try:
+   202    744.4 MiB    147.0 MiB           3                   message, _ = from_recvh.recv_bytes(timeout=None)
+   203    744.4 MiB      0.0 MiB           2                   all_bytes.append(message)
+   204    744.4 MiB      0.0 MiB           1               except fli.FLIEOT as exc:
+   205    744.4 MiB      0.0 MiB           1                   break
+   206                                         
+   207    744.4 MiB      0.0 MiB           1       req = all_bytes[0]
+   208    744.4 MiB      0.0 MiB           1       assert req == b'request_bytes'
+   209    744.4 MiB      0.0 MiB           1       tensor_bytes = all_bytes[1:]
+   210                                         
+   211    744.4 MiB      0.0 MiB           1       result = []
+   212    896.7 MiB      0.0 MiB           2       for tensor in tensor_bytes:
+   213    896.7 MiB      0.0 MiB           2           result.append(
+   214    896.7 MiB    152.3 MiB           1               torch.tensor(np.frombuffer(tensor))
+   215    896.7 MiB      0.0 MiB           1               .to('cpu')
+   216                                                 )
+Pickle Adapter:
+Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+    20    295.3 MiB    295.3 MiB           1   @profile
+    21                                         def test_pickle_malloc():
+    22    442.3 MiB    147.0 MiB           1       tensors = np.random.rand(224,224,3,128)
+    23                                         
+    24    444.2 MiB      1.9 MiB           1       to_worker_channel = Channel.make_process_local()
+    25    444.2 MiB      0.0 MiB           1       to_worker_fli = fli.FLInterface(main_ch=to_worker_channel, manager_ch=None)
+    26                                         
+    27    591.5 MiB      0.0 MiB           2       with to_worker_fli.sendh(timeout=None, use_main_as_stream_channel=True) as to_sendh:
+    28    444.2 MiB      0.0 MiB           1           to_sendh.send_bytes(b"request_bytes")
+    29    591.5 MiB    147.3 MiB           1           cp.dump(tensors, file=fli.PickleWriteAdapter(sendh=to_sendh), protocol=pickle.HIGHEST_PROTOCOL)
+    30                                         
+    31    885.6 MiB      0.0 MiB           2       with to_worker_fli.recvh(use_main_as_stream_channel=True, timeout=None) as from_recvh:
+    32    591.5 MiB      0.0 MiB           1           received_request_bytes, _ = from_recvh.recv_bytes()
+    33    885.6 MiB    294.1 MiB           1           received_tensor = cp.load(file=fli.PickleReadAdapter(recvh=from_recvh))
+    34                                         
+    35    885.6 MiB      0.0 MiB           1       assert received_request_bytes == b'request_bytes'
+    36    885.6 MiB      0.0 MiB           1       result = []
+    37    885.6 MiB      0.0 MiB           1       result.append(torch.from_numpy(received_tensor))
