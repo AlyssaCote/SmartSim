@@ -1,17 +1,4 @@
 
-
-Line #    Mem usage    Increment  Occurrences   Line Contents
-=============================================================
-   181 378.05469 MiB 378.05469 MiB           1   @profile(precision=5)
-   182                                         def test_profile_torch_jit_load_load_model():
-   183 409.59766 MiB  31.54297 MiB           1       model_bytes = create_torch_model()
-   184 409.59766 MiB   0.00000 MiB           1       buffer = io.BytesIO(initial_bytes=model_bytes)
-   185 420.88281 MiB   0.00000 MiB           2       with torch.no_grad():
-   186 420.88281 MiB  11.28516 MiB           1           model = torch.jit.load(buffer, map_location="cpu")
-   187 420.88281 MiB   0.00000 MiB           1           model.eval()
-
-
-
 Line #    Mem usage    Increment  Occurrences   Line Contents
 =============================================================
    158 381.73828 MiB 381.73828 MiB           1   @profile(precision=5)
