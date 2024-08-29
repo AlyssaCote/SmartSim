@@ -328,8 +328,6 @@ class RequestDispatcher(Service):
                     "No request data found.",
                 )
 
-            # request_bytes = bytes_list[0]
-            # tensor_bytes_list = bytes_list[1:]
             self._perf_timer.start_timings()
 
             request = self._worker.deserialize_message(

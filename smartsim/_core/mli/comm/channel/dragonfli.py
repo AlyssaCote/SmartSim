@@ -74,16 +74,6 @@ class DragonFLIChannel(cch.CommChannelBase):
                 return header, received_tensors
             except Exception:
                 return None, None
-    
-    # def recv_header(self):
-    #     with self._fli.recvh(timeout=0.001) as recvh:
-    #         try:
-    #             message, _ = recvh.recv_bytes(timeout=None)
-    #             return message
-    #         except Exception:
-    #             return None
-            
-
 
     @classmethod
     def from_descriptor(
