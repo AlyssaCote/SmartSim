@@ -46,3 +46,31 @@ Line #    Mem usage    Increment  Occurrences   Line Contents
    175 504.06641 MiB  48.10547 MiB           1       the_item = storage["key"]
    176                                         
    177 504.06641 MiB   0.00000 MiB           1       assert item == the_item
+
+
+
+
+   these next results are from hotlum with the new wheel
+
+   Line #    Mem usage    Increment  Occurrences   Line Contents
+=============================================================
+   159 278.79688 MiB 278.79688 MiB           1   @profile(precision=5)
+   160                                         def test_profile_ddict():
+   161 278.79688 MiB   0.00000 MiB           1       mgr_per_node = 1
+   162 278.79688 MiB   0.00000 MiB           1       num_nodes = 2
+   163 278.79688 MiB   0.00000 MiB           1       mem_per_node = 1024**3
+   164 278.79688 MiB   0.00000 MiB           1       total_mem = num_nodes * mem_per_node
+   165                                         
+   166 282.37109 MiB   3.57422 MiB           2       storage = DDict(
+   167 278.79688 MiB   0.00000 MiB           1           managers_per_node=mgr_per_node,
+   168 278.79688 MiB   0.00000 MiB           1           n_nodes=num_nodes,
+   169 278.79688 MiB   0.00000 MiB           1           total_mem=total_mem,
+   170                                             )
+   171                                         
+   172 306.77734 MiB  24.40625 MiB           1       item = np.random.rand(1024,1024,3)
+   173                                         
+   174 331.01172 MiB  24.23438 MiB           1       storage["key"] = item
+   175                                         
+   176 355.33984 MiB  24.32812 MiB           1       the_item = storage["key"]
+
+   

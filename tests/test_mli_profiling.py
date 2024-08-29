@@ -58,46 +58,46 @@ pytestmark = pytest.mark.group_a
 
 
 # simple MNIST in PyTorch
-class Net(nn.Module):
-    def __init__(self):
-        super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
+# class Net(nn.Module):
+#     def __init__(self):
+#         super(Net, self).__init__()
+#         self.conv1 = nn.Conv2d(1, 32, 3, 1)
+#         self.conv2 = nn.Conv2d(32, 64, 3, 1)
+#         self.dropout1 = nn.Dropout(0.25)
+#         self.dropout2 = nn.Dropout(0.5)
+#         self.fc1 = nn.Linear(9216, 128)
+#         self.fc2 = nn.Linear(128, 10)
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
-
-
-# torch_device = {"cpu": "cpu", "gpu": "cuda"}
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         x = F.relu(x)
+#         x = self.conv2(x)
+#         x = F.relu(x)
+#         x = F.max_pool2d(x, 2)
+#         x = self.dropout1(x)
+#         x = torch.flatten(x, 1)
+#         x = self.fc1(x)
+#         x = F.relu(x)
+#         x = self.dropout2(x)
+#         x = self.fc2(x)
+#         output = F.log_softmax(x, dim=1)
+#         return output
 
 
-def get_batch() -> torch.Tensor:
-    return torch.rand(20, 1, 28, 28)
+# # torch_device = {"cpu": "cpu", "gpu": "cuda"}
 
-@profile(precision=5)
-def create_torch_model():
-    n = Net()
-    example_forward_input = get_batch()
-    module = torch.jit.trace(n, example_forward_input)
-    model_buffer = io.BytesIO()
-    torch.jit.save(module, model_buffer)
-    return model_buffer.getvalue()
+
+# def get_batch() -> torch.Tensor:
+#     return torch.rand(20, 1, 28, 28)
+
+# @profile(precision=5)
+# def create_torch_model():
+#     n = Net()
+#     example_forward_input = get_batch()
+#     module = torch.jit.trace(n, example_forward_input)
+#     model_buffer = io.BytesIO()
+#     torch.jit.save(module, model_buffer)
+#     return model_buffer.getvalue()
 
 # @profile
 # def get_request() -> InferenceRequest:
@@ -156,26 +156,31 @@ def create_torch_model():
 #     assert np.array_equal(item, the_item)
 
 
-# @profile(precision=5)
-# def test_profile_ddict():
-#     mgr_per_node = 1
-#     num_nodes = 2
-#     mem_per_node = 1024**3
-#     total_mem = num_nodes * mem_per_node
+@profile(precision=5)
+def test_profile_ddict():
+    mgr_per_node = 1
+    num_nodes = 2
+    mem_per_node = 1024**3
+    total_mem = num_nodes * mem_per_node
 
-#     storage = DDict(
-#         managers_per_node=mgr_per_node,
-#         n_nodes=num_nodes,
-#         total_mem=total_mem,
-#     )
+    storage = DDict(
+        managers_per_node=mgr_per_node,
+        n_nodes=num_nodes,
+        total_mem=total_mem,
+    )
 
-#     item = np.random.rand(1024,1024,3)
+    item = np.random.rand(1024,1024,3).tobytes()
 
-#     storage["key"] = item
+    storage["key_1"] = item
+    storage["key_2"] = item
+    storage["key_3"] = item
+    storage["key_4"] = item
 
-#     the_item = storage["key"]
+    the_item = storage["key_1"]
 
-#     assert np.array_equal(item, the_item)
+    assert item == the_item
+
+    # assert np.array_equal(item, the_item)
 
 
 # @profile(precision=5)
@@ -197,13 +202,13 @@ def create_torch_model():
 
 #     assert type(item)==bytes
 
-@profile(precision=5)
-def test_bytes_concat():
+# @profile(precision=5)
+# def test_bytes_concat():
 
-    item = np.random.rand(1024,1024,300).tobytes()
+#     item = np.random.rand(1024,1024,300).tobytes()
 
-    item2 = np.random.rand(1024,1024,300).tobytes()
+#     item2 = np.random.rand(1024,1024,300).tobytes()
 
-    item = item+item2
+#     item = item+item2
 
-    assert type(item)==bytes
+#     assert type(item)==bytes
