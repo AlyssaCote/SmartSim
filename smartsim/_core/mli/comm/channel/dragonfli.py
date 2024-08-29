@@ -32,6 +32,8 @@ import dragon.channels as dch
 
 import base64
 import typing as t
+import numpy as np
+
 import cloudpickle as cp
 
 import smartsim._core.mli.comm.channel.channel as cch
@@ -63,18 +65,18 @@ class DragonFLIChannel(cch.CommChannelBase):
         with self._fli.sendh(timeout=None, stream_channel=self._channel) as sendh:
             sendh.send_bytes(value)
 
-    def recv(self) -> t.List[bytes]:
+    def recv(self) -> t.Tuple[t.Optional[bytes], t.Optional[t.List[np.ndarray]]]:
         """Receieve a message through the underlying communication channel
 
-        :returns: the received message"""
+        :returns: the request bytes and the list of tensors"""
         with self._fli.recvh(timeout=0.001) as recvh:
             try:
-                header, _ = recvh.recv_bytes(timeout=None)
+                request_bytes, _ = recvh.recv_bytes(timeout=None)
                 received_tensors = cp.load(file=fli.PickleReadAdapter(recvh=recvh))
-                return header, received_tensors
+                return request_bytes, received_tensors
             except Exception:
                 return None, None
-
+            
     @classmethod
     def from_descriptor(
         cls,

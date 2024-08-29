@@ -33,6 +33,7 @@ from dragon.managed_memory import MemoryPool
 import typing as t
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import numpy as np
 
 from .....error import SmartSimError
 from .....log import get_logger
@@ -143,7 +144,7 @@ class ExecuteResult:
 class FetchInputResult:
     """A wrapper around fetched inputs"""
 
-    def __init__(self, result: t.List[bytes], meta: t.Optional[t.List[t.Any]]) -> None:
+    def __init__(self, result: t.List[np.ndarray], meta: t.Optional[t.List[t.Any]]) -> None:
         """Initialize the object"""
         self.inputs = result
         self.meta = meta

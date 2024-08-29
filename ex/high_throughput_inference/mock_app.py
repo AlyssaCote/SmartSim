@@ -106,8 +106,7 @@ class ProtoClient:
         with self._to_worker_fli.sendh(timeout=None, stream_channel=self._to_worker_ch) as to_sendh:
             to_sendh.send_bytes(request_bytes)
             self.perf_timer.measure_time("send_request")
-            for tensor in tensors:
-                cp.dump(tensor, file=fli.PickleWriteAdapter(sendh=to_sendh), protocol=pickle.HIGHEST_PROTOCOL)
+            cp.dump(tensors, file=fli.PickleWriteAdapter(sendh=to_sendh), protocol=pickle.HIGHEST_PROTOCOL)
         self.perf_timer.measure_time("send_tensors")
 
         with self._from_worker_ch.recvh(timeout=None) as from_recvh:
