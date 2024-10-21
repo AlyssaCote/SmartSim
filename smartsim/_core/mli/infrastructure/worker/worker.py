@@ -190,6 +190,7 @@ class InferenceReply:
         """
         return self.output_keys is not None and bool(self.output_keys)
 
+
 @dataclass
 class TensorMeta:
     """Metadata about a tensor, built from TensorDescriptors."""
@@ -200,7 +201,8 @@ class TensorMeta:
     """Order of the tensor"""
     datatype: str
     """Datatype of the tensor"""
-    
+
+
 class LoadModelResult:
     """A wrapper around a loaded model."""
 
@@ -264,7 +266,9 @@ class FetchInputResult:
     """A wrapper around fetched inputs."""
 
     def __init__(
-        self, result: t.List[t.List[bytes]], meta: t.Optional[t.List[t.List[TensorMeta]]]
+        self,
+        result: t.List[t.List[bytes]],
+        meta: t.Optional[t.List[t.List[TensorMeta]]],
     ) -> None:
         """Initialize the FetchInputResult.
 
