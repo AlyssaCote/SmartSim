@@ -162,12 +162,11 @@ def test_request_dispatcher(
         processes.append(process)
         process.start()
         assert process.returncode is None, "The message pump failed to start"
-        time.sleep(5)
         # give dragon some time to populate the message queues
         for i in range(15):
             try:
                 request_dispatcher._on_iteration()
-                batch = request_dispatcher.task_queue.get(timeout=10)
+                batch = request_dispatcher.task_queue.get(timeout=1.0)
                 break
             except Empty:
                 time.sleep(2)

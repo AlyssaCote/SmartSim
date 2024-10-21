@@ -173,8 +173,9 @@ def _mock_messages(
 
     # keep the process alive for an extra 15 seconds to let the processor
     # have access to the channels before they're destroyed
-    for _ in range(30):
-        # TODO: Chris needs to fix something here
+    for _ in range(15):
+        # TODO: Chris says he wants to fix something here!
+        # I'm not sure what that something is.
         time.sleep(1)
 
 
