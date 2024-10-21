@@ -150,13 +150,13 @@ def test_load_model(mlutils) -> None:
 
 def test_transform_input(mlutils) -> None:
     fetch_input_result = FetchInputResult(
-        sample_request.raw_inputs, sample_request.input_meta
+        sample_request_batch.raw_inputs, sample_request_batch.input_meta
     )
 
     mem_pool = MemoryPool.attach(dragon_gs_pool.create(1024**2).sdesc)
 
     transform_input_result = worker.transform_input(
-        sample_request_batch, [fetch_input_result], mem_pool
+        sample_request_batch, fetch_input_result, mem_pool
     )
 
     batch = get_batch().numpy()

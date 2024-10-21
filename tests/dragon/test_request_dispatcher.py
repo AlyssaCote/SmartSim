@@ -71,7 +71,7 @@ from smartsim._core.mli.infrastructure.storage.dragon_feature_store import (
 )
 from smartsim._core.mli.infrastructure.storage.feature_store import ModelKey, TensorKey
 from smartsim._core.mli.infrastructure.worker.torch_worker import TorchWorker
-from smartsim._core.mli.infrastructure.worker.worker import InferenceRequest
+from smartsim._core.mli.infrastructure.worker.worker import InferenceRequest, TensorMeta
 from smartsim._core.mli.message_handler import MessageHandler
 from smartsim.log import get_logger
 from tests.dragon.utils.channel import FileSystemCommChannel
@@ -168,7 +168,6 @@ def test_request_dispatcher(
             try:
                 request_dispatcher._on_iteration()
                 batch = request_dispatcher.task_queue.get(timeout=10)
-                print(batch.__dict__)
                 break
             except Empty:
                 time.sleep(2)
@@ -268,7 +267,7 @@ def test_request_batch(test_dir: str) -> None:
         model_key=model_id2,
         callback=callback2,
         raw_inputs=None,
-        input_keys=[tensor_key, tensor_key2],
+        input_keys=None,
         input_meta=None,
         output_keys=[output_key, output_key2],
         raw_model=b"model",
@@ -290,7 +289,6 @@ def test_request_batch(test_dir: str) -> None:
         [request1, request2, request3], None, req_batch_model_id
     )
 
-    print(request_batch.__dict__)
     assert len(request_batch.callbacks) == 3
     for callback in request_batch.callbacks:
         assert isinstance(callback, FileSystemCommChannel)
@@ -299,14 +297,14 @@ def test_request_batch(test_dir: str) -> None:
     assert request_batch.model_id == req_batch_model_id
     assert request_batch.inputs == None
     assert request_batch.raw_model == b"model"
-    assert request_batch.raw_inputs == [b"input data"]
-    assert request_batch.input_meta == [tensor_desc, tensor_desc]
+    assert request_batch.raw_inputs == [[b"input data"]]
+    assert request_batch.input_meta == [
+        [TensorMeta([1, 2], "c", "float32")],
+        [TensorMeta([1, 2], "c", "float32")],
+    ]
     assert request_batch.input_keys == [
-        tensor_key,
-        tensor_key,
-        tensor_key2,
-        tensor_key,
-        tensor_key2,
+        [tensor_key],
+        [tensor_key, tensor_key2],
     ]
     assert request_batch.output_key_refs == {
         callback1: [output_key],

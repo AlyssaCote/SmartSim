@@ -210,7 +210,7 @@ def test_fetch_input_disk(persist_torch_tensor: pathlib.Path) -> None:
     feature_store[tensor_name] = persist_torch_tensor.read_bytes()
 
     fetch_result = worker.fetch_inputs(batch, {fsd: feature_store})
-    assert fetch_result[0].inputs is not None
+    assert fetch_result.inputs[0] is not None
 
 
 def test_fetch_input_disk_missing() -> None:
@@ -253,9 +253,9 @@ def test_fetch_input_feature_store(persist_torch_tensor: pathlib.Path) -> None:
     batch = RequestBatch.from_requests([request], None, model_key)
 
     fetch_result = worker.fetch_inputs(batch, {fsd: feature_store})
-    assert fetch_result[0].inputs
+    assert fetch_result.inputs[0]
     assert (
-        list(fetch_result[0].inputs)[0][:10] == persist_torch_tensor.read_bytes()[:10]
+        list(fetch_result.inputs[0])[0][:10] == persist_torch_tensor.read_bytes()[:10]
     )
 
 
@@ -292,7 +292,7 @@ def test_fetch_multi_input_feature_store(persist_torch_tensor: pathlib.Path) -> 
 
     fetch_result = worker.fetch_inputs(batch, {fsd: feature_store})
 
-    raw_bytes = list(fetch_result[0].inputs)
+    raw_bytes = list(fetch_result.inputs[0])
     assert raw_bytes[0][:10] == persist_torch_tensor.read_bytes()[:10]
     assert raw_bytes[1][:10] == body2[:10]
     assert raw_bytes[2][:10] == body3[:10]
@@ -334,7 +334,7 @@ def test_fetch_input_memory(persist_torch_tensor: pathlib.Path) -> None:
     batch = RequestBatch.from_requests([request], None, model_key)
 
     fetch_result = worker.fetch_inputs(batch, {fsd: feature_store})
-    assert fetch_result[0].inputs is not None
+    assert fetch_result.inputs[0] is not None
 
 
 def test_place_outputs(test_dir: str) -> None:

@@ -132,7 +132,7 @@ class WorkerManager(Service):
         fs_model: t.Set[str] = set()
         if batch.model_id.key:
             fs_model = {batch.model_id.descriptor}
-        fs_inputs = {key.descriptor for key in batch.input_keys}
+        fs_inputs = {key.descriptor for keys in batch.input_keys for key in keys}
         fs_outputs = {
             key.descriptor for keys in batch.output_key_refs.values() for key in keys
         }

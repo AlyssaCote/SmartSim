@@ -39,11 +39,11 @@ from .....log import get_logger
 from ...comm.channel.channel import CommChannelBase
 from ...message_handler import MessageHandler
 from ...mli_schemas.model.model_capnp import Model
+from ...mli_schemas.tensor.tensor_capnp import TensorDescriptor
 from ..storage.feature_store import FeatureStore, ModelKey, TensorKey
 
 if t.TYPE_CHECKING:
     from smartsim._core.mli.mli_schemas.response.response_capnp import Status
-    from smartsim._core.mli.mli_schemas.tensor.tensor_capnp import TensorDescriptor
 
 logger = get_logger(__name__)
 
@@ -60,7 +60,7 @@ class InferenceRequest:
         callback: t.Optional[CommChannelBase] = None,
         raw_inputs: t.Optional[t.List[bytes]] = None,
         input_keys: t.Optional[t.List[TensorKey]] = None,
-        input_meta: t.Optional[t.List[t.Any]] = None,
+        input_meta: t.Optional[t.List[TensorDescriptor]] = None,
         output_keys: t.Optional[t.List[TensorKey]] = None,
         raw_model: t.Optional[Model] = None,
         batch_size: int = 0,
@@ -190,7 +190,17 @@ class InferenceReply:
         """
         return self.output_keys is not None and bool(self.output_keys)
 
+@dataclass
+class TensorMeta:
+    """Metadata about a tensor, built from TensorDescriptors."""
 
+    dimensions: t.List[int]
+    """Dimensions of the tensor"""
+    order: str
+    """Order of the tensor"""
+    datatype: str
+    """Datatype of the tensor"""
+    
 class LoadModelResult:
     """A wrapper around a loaded model."""
 
@@ -253,7 +263,9 @@ class ExecuteResult:
 class FetchInputResult:
     """A wrapper around fetched inputs."""
 
-    def __init__(self, result: t.List[bytes], meta: t.Optional[t.List[t.Any]]) -> None:
+    def __init__(
+        self, result: t.List[t.List[bytes]], meta: t.Optional[t.List[t.List[TensorMeta]]]
+    ) -> None:
         """Initialize the FetchInputResult.
 
         :param result: List of input tensor bytes
@@ -320,11 +332,11 @@ class RequestBatch:
     """Raw bytes of the model"""
     callbacks: t.List[CommChannelBase]
     """The channels used for notification of inference completion"""
-    raw_inputs: t.List[bytes]
+    raw_inputs: t.List[t.List[bytes]]
     """Raw bytes of tensor inputs"""
-    input_meta: t.List[t.Any]
+    input_meta: t.List[t.List[TensorMeta]]
     """Metadata about the input data"""
-    input_keys: t.List[TensorKey]
+    input_keys: t.List[t.List[TensorKey]]
     """A list of tuples containing a (key, descriptor) pair"""
     output_key_refs: t.Dict[CommChannelBase, t.List[TensorKey]]
     """A dictionary mapping callbacks to output keys"""
@@ -367,9 +379,24 @@ class RequestBatch:
         return cls(
             raw_model=requests[0].raw_model,
             callbacks=[request.callback for request in requests if request.callback],
-            raw_inputs=[key for request in requests for key in request.raw_inputs],
-            input_meta=[key for request in requests for key in request.input_meta],
-            input_keys=[key for request in requests for key in request.input_keys],
+            raw_inputs=[
+                request.raw_inputs for request in requests if request.raw_inputs
+            ],
+            input_meta=[
+                [
+                    TensorMeta(
+                        dimensions=list(meta.dimensions),
+                        order=str(meta.order),
+                        datatype=str(meta.dataType),
+                    )
+                    for meta in request.input_meta
+                ]
+                for request in requests
+                if request.input_meta
+            ],
+            input_keys=[
+                request.input_keys for request in requests if request.input_keys
+            ],
             output_key_refs={
                 request.callback: request.output_keys
                 for request in requests
@@ -505,7 +532,7 @@ class MachineLearningWorkerCore:
     @staticmethod
     def fetch_inputs(
         batch: RequestBatch, feature_stores: t.Dict[str, FeatureStore]
-    ) -> t.List[FetchInputResult]:
+    ) -> FetchInputResult:
         """Given a collection of ResourceKeys, identify the physical location
         and input metadata.
 
@@ -515,35 +542,33 @@ class MachineLearningWorkerCore:
         :raises ValueError: If neither an input key or an input tensor are provided
         :raises SmartSimError: If a tensor for a given key cannot be retrieved
         """
-        fetch_results = []
-
         if not batch.raw_inputs and not batch.input_keys:
             raise ValueError("No input source")
 
         if batch.raw_inputs:
-            fetch_results.append(FetchInputResult(batch.raw_inputs, batch.input_meta))
+            return FetchInputResult(batch.raw_inputs, batch.input_meta)
 
         if not feature_stores:
             raise ValueError("No feature stores provided")
 
+        data: t.List[t.List[bytes]] = []
         if batch.input_keys:
-            data: t.List[bytes] = []
+            for batch_keys in batch.input_keys:
+                batch_data: t.List[bytes] = []
+                for fs_key in batch_keys:
+                    try:
+                        feature_store = feature_stores[fs_key.descriptor]
+                        tensor_bytes = t.cast(bytes, feature_store[fs_key.key])
+                        batch_data.append(tensor_bytes)
+                    except KeyError as ex:
+                        logger.exception(ex)
+                        raise SmartSimError(
+                            f"Tensor could not be retrieved with key {fs_key.key}"
+                        ) from ex
+                data.append(batch_data)
 
-            for fs_key in batch.input_keys:
-                try:
-                    feature_store = feature_stores[fs_key.descriptor]
-                    tensor_bytes = t.cast(bytes, feature_store[fs_key.key])
-                    data.append(tensor_bytes)
-                except KeyError as ex:
-                    logger.exception(ex)
-                    raise SmartSimError(
-                        f"Tensor could not be retrieved with key {fs_key.key}"
-                    ) from ex
-            fetch_results.append(
-                FetchInputResult(data, meta=None)
-            )  # fixme: need to get both tensor and descriptor
-
-        return fetch_results
+        return FetchInputResult(result=data, meta=None)
+        # fixme: need to get both tensor and descriptor
 
     @staticmethod
     def place_output(
@@ -601,7 +626,7 @@ class MachineLearningWorkerBase(MachineLearningWorkerCore, ABC):
     @abstractmethod
     def transform_input(
         batch: RequestBatch,
-        fetch_results: list[FetchInputResult],
+        fetch_results: FetchInputResult,
         mem_pool: MemoryPool,
     ) -> TransformInputResult:
         """Given a collection of data, perform a transformation on the data and put
