@@ -199,9 +199,11 @@ class TensorMeta:
     dimensions: t.List[int]
     """Dimensions of the tensor"""
     order: str
-    """Order of the tensor"""
+    """Order of the tensor in row major ("c"), or
+    column major ("f") format"""
     datatype: str
-    """Datatype of the tensor"""
+    """Datatype of the tensor as specified by the TensorDescriptor
+    NumericalType enums. Examples include "float32", "int8", etc."""
 
 
 class LoadModelResult:
@@ -352,8 +354,8 @@ class RequestBatch:
 
     @property
     def has_callbacks(self) -> bool:
-        """Returns whether the batch contains at least one callback,
-        which indicates there is at least one request in the batch.
+        """Determines if the batch has at least one callback channel
+        available for sending results.
 
         :returns: True if at least one callback is present
         """
