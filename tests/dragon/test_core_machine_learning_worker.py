@@ -360,12 +360,12 @@ def test_place_outputs(test_dir: str) -> None:
     data = [b"abcdef", b"ghijkl", b"mnopqr"]
     data2 = [b"stuvwx", b"yzabcd", b"efghij"]
 
-    callback1 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback1")
-    callback2 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback2")
+    callback1 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback1").descriptor
+    callback2 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback2").descriptor
 
     model_id = ModelKey(key="test-model", descriptor=fsd)
-    request = InferenceRequest(callback=callback1, output_keys=keys)
-    request2 = InferenceRequest(callback=callback2, output_keys=keys2)
+    request = InferenceRequest(callback_desc=callback1, output_keys=keys)
+    request2 = InferenceRequest(callback_desc=callback2, output_keys=keys2)
     transform_result = TransformOutputResult(data, [1], "c", "float32")
     transform_result2 = TransformOutputResult(data2, [1], "c", "float32")
 

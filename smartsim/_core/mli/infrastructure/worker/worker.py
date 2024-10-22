@@ -57,7 +57,7 @@ class InferenceRequest:
     def __init__(
         self,
         model_key: t.Optional[ModelKey] = None,
-        callback: t.Optional[CommChannelBase] = None,
+        callback_desc: t.Optional[str] = None,
         raw_inputs: t.Optional[t.List[bytes]] = None,
         input_keys: t.Optional[t.List[TensorKey]] = None,
         input_meta: t.Optional[t.List[TensorDescriptor]] = None,
@@ -68,7 +68,8 @@ class InferenceRequest:
         """Initialize the InferenceRequest.
 
         :param model_key: A tuple containing a (key, descriptor) pair
-        :param callback: The channel used for notification of inference completion
+        :param callback_desc: The channel descriptor used for notification
+        of inference completion
         :param raw_inputs: Raw bytes of tensor inputs
         :param input_keys: A list of tuples containing a (key, descriptor) pair
         :param input_meta: Metadata about the input data
@@ -80,7 +81,7 @@ class InferenceRequest:
         """A tuple containing a (key, descriptor) pair"""
         self.raw_model = raw_model
         """Raw bytes of an ML model"""
-        self.callback = callback
+        self.callback_desc = callback_desc
         """The channel used for notification of inference completion"""
         self.raw_inputs = raw_inputs or []
         """Raw bytes of tensor inputs"""
@@ -334,16 +335,16 @@ class RequestBatch:
 
     raw_model: t.Optional[Model]
     """Raw bytes of the model"""
-    callbacks: t.List[CommChannelBase]
-    """The channels used for notification of inference completion"""
+    callback_descriptors: t.List[str]
+    """The descriptors for channels used for notification of inference completion"""
     raw_inputs: t.List[t.List[bytes]]
     """Raw bytes of tensor inputs"""
     input_meta: t.List[t.List[TensorMeta]]
     """Metadata about the input data"""
     input_keys: t.List[t.List[TensorKey]]
     """A list of tuples containing a (key, descriptor) pair"""
-    output_key_refs: t.Dict[CommChannelBase, t.List[TensorKey]]
-    """A dictionary mapping callbacks to output keys"""
+    output_key_refs: t.Dict[str, t.List[TensorKey]]
+    """A dictionary mapping callbacks descriptors to output keys"""
     inputs: t.Optional[TransformInputResult]
     """Transformed batch of input tensors"""
     model_id: "ModelIdentifier"
@@ -356,7 +357,7 @@ class RequestBatch:
 
         :returns: True if at least one callback is present
         """
-        return len(self.callbacks) > 0
+        return len(self.callback_descriptors) > 0
 
     @property
     def has_raw_model(self) -> bool:
@@ -375,13 +376,14 @@ class RequestBatch:
         """Create a RequestBatch from a list of requests.
 
         :param requests: The requests to batch
-        :param inputs: The transformed batch of input tensors
         :param model_id: The model identifier
         :returns: A RequestBatch instance
         """
         return cls(
             raw_model=requests[0].raw_model,
-            callbacks=[request.callback for request in requests if request.callback],
+            callback_descriptors=[
+                request.callback_desc for request in requests if request.callback_desc
+            ],
             raw_inputs=[
                 request.raw_inputs for request in requests if request.raw_inputs
             ],
@@ -401,9 +403,9 @@ class RequestBatch:
                 request.input_keys for request in requests if request.input_keys
             ],
             output_key_refs={
-                request.callback: request.output_keys
+                request.callback_desc: request.output_keys
                 for request in requests
-                if request.callback and request.output_keys
+                if request.callback_desc and request.output_keys
             },
             inputs=None,
             model_id=model_id,
@@ -438,7 +440,7 @@ class MachineLearningWorkerCore:
             model_bytes = request.model.data
 
         callback_key = request.replyChannel.descriptor
-        comm_channel = callback_factory(callback_key)
+        comm_channel_desc = callback_factory(callback_key).descriptor
         input_keys: t.Optional[t.List[TensorKey]] = None
         input_bytes: t.Optional[t.List[bytes]] = None
         output_keys: t.Optional[t.List[TensorKey]] = None
@@ -460,7 +462,7 @@ class MachineLearningWorkerCore:
 
         inference_request = InferenceRequest(
             model_key=model_key,
-            callback=comm_channel,
+            callback_desc=comm_channel_desc,
             raw_inputs=input_bytes,
             input_meta=input_meta,
             input_keys=input_keys,

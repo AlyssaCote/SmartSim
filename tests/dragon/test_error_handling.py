@@ -30,6 +30,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from smartsim._core.mli.comm.channel.dragon_channel import DragonCommChannel
+
 dragon = pytest.importorskip("dragon")
 
 import multiprocessing as mp
@@ -124,9 +126,11 @@ def setup_worker_manager_model_bytes(
     tensor_key = MessageHandler.build_tensor_key("key", app_feature_store.descriptor)
     output_key = MessageHandler.build_tensor_key("key", app_feature_store.descriptor)
 
+    callback_descriptor = DragonCommChannel.from_local().descriptor
+
     inf_request = InferenceRequest(
         model_key=None,
-        callback=FileSystemCommChannel(pathlib.Path(test_dir) / "callback"),
+        callback_desc=callback_descriptor,
         raw_inputs=None,
         input_keys=[tensor_key],
         input_meta=None,
@@ -186,9 +190,11 @@ def setup_worker_manager_model_key(
     output_key = TensorKey(key="key", descriptor=app_feature_store.descriptor)
     model_id = ModelKey(key="model key", descriptor=app_feature_store.descriptor)
 
+    callback_descriptor = DragonCommChannel.from_local().descriptor
+
     request = InferenceRequest(
         model_key=model_id,
-        callback=FileSystemCommChannel(pathlib.Path(test_dir) / "callback"),
+        callback_desc=callback_descriptor,
         raw_inputs=None,
         input_keys=[tensor_key],
         input_meta=None,

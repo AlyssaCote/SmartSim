@@ -110,7 +110,7 @@ def get_request() -> InferenceRequest:
 
     return InferenceRequest(
         model_key=ModelKey(key="model", descriptor="xyz"),
-        callback=None,
+        callback_desc=None,
         raw_inputs=tensor_numpy,
         input_keys=None,
         input_meta=serialized_tensors_descriptors,

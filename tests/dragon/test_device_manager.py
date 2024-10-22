@@ -123,7 +123,7 @@ def test_device_manager_model_in_request():
 
     request = InferenceRequest(
         model_key=model_key,
-        callback=None,
+        callback_desc=None,
         raw_inputs=None,
         input_keys=[tensor_key],
         input_meta=None,
@@ -164,7 +164,7 @@ def test_device_manager_model_key():
 
     request = InferenceRequest(
         model_key=model_key,
-        callback=None,
+        callback_desc=None,
         raw_inputs=None,
         input_keys=[tensor_key],
         input_meta=None,

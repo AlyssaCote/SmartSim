@@ -200,7 +200,7 @@ def test_request_dispatcher(
                     )
                 )
 
-            assert len(batch.callbacks) == 2
+            assert len(batch.callback_descriptors) == 2
             assert batch.model_id.key == model_key
             assert model_key in request_dispatcher._queues
             assert model_key in request_dispatcher._active_queues
@@ -247,13 +247,13 @@ def test_request_batch(test_dir: str) -> None:
     tensor_desc = MessageHandler.build_tensor_descriptor("c", "float32", [1, 2])
     req_batch_model_id = ModelKey(key="req key", descriptor="desc")
 
-    callback1 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback1")
-    callback2 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback2")
-    callback3 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback3")
+    callback1 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback1").descriptor
+    callback2 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback2").descriptor
+    callback3 = FileSystemCommChannel(pathlib.Path(test_dir) / "callback3").descriptor
 
     request1 = InferenceRequest(
         model_key=model_id1,
-        callback=callback1,
+        callback_desc=callback1,
         raw_inputs=[b"input data"],
         input_keys=[tensor_key],
         input_meta=[tensor_desc],
@@ -264,7 +264,7 @@ def test_request_batch(test_dir: str) -> None:
 
     request2 = InferenceRequest(
         model_key=model_id2,
-        callback=callback2,
+        callback_desc=callback2,
         raw_inputs=None,
         input_keys=None,
         input_meta=None,
@@ -275,7 +275,7 @@ def test_request_batch(test_dir: str) -> None:
 
     request3 = InferenceRequest(
         model_key=model_id2,
-        callback=callback3,
+        callback_desc=callback3,
         raw_inputs=None,
         input_keys=[tensor_key, tensor_key2],
         input_meta=[tensor_desc],
@@ -288,9 +288,9 @@ def test_request_batch(test_dir: str) -> None:
         [request1, request2, request3], req_batch_model_id
     )
 
-    assert len(request_batch.callbacks) == 3
-    for callback in request_batch.callbacks:
-        assert isinstance(callback, FileSystemCommChannel)
+    assert len(request_batch.callback_descriptors) == 3
+    for callback in request_batch.callback_descriptors:
+        assert isinstance(callback, str)
     assert len(request_batch.output_key_refs.keys()) == 2
     assert request_batch.has_callbacks
     assert request_batch.model_id == req_batch_model_id

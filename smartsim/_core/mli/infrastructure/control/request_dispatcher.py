@@ -43,6 +43,7 @@ import uuid
 from queue import Empty, Full, Queue
 
 from smartsim._core.entrypoints.service import Service
+from smartsim._core.mli.comm.channel.dragon_channel import DragonCommChannel
 
 from .....error import SmartSimError
 from .....log import get_logger
@@ -334,7 +335,7 @@ class RequestDispatcher(Service):
         :param request: The request to validate
         :returns: False if callback validation fails for the request, True otherwise
         """
-        if request.callback:
+        if request.callback_desc:
             return True
 
         logger.error("No callback channel provided in request")
@@ -387,7 +388,11 @@ class RequestDispatcher(Service):
             if not self._validate_request(request):
                 exception_handler(
                     ValueError("Error validating the request"),
-                    request.callback,
+                    (
+                        DragonCommChannel.from_descriptor(request.callback_desc)
+                        if request.callback_desc
+                        else None
+                    ),
                     None,
                 )
                 self._perf_timer.measure_time("validate_request")
