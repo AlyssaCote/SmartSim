@@ -126,7 +126,7 @@ def setup_worker_manager_model_bytes(
     tensor_key = MessageHandler.build_tensor_key("key", app_feature_store.descriptor)
     output_key = MessageHandler.build_tensor_key("key", app_feature_store.descriptor)
 
-    callback_descriptor = DragonCommChannel.from_local().descriptor
+    callback_descriptor = FileSystemCommChannel(pathlib.Path(test_dir)/"callback1").descriptor
 
     inf_request = InferenceRequest(
         model_key=None,
@@ -190,7 +190,7 @@ def setup_worker_manager_model_key(
     output_key = TensorKey(key="key", descriptor=app_feature_store.descriptor)
     model_id = ModelKey(key="model key", descriptor=app_feature_store.descriptor)
 
-    callback_descriptor = DragonCommChannel.from_local().descriptor
+    callback_descriptor = FileSystemCommChannel(pathlib.Path(test_dir)/"callback2").descriptor
 
     request = InferenceRequest(
         model_key=model_id,

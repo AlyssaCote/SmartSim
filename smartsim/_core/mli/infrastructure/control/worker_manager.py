@@ -38,7 +38,6 @@ import time
 import typing as t
 from queue import Empty
 
-from smartsim._core.mli.comm.channel.dragon_channel import DragonCommChannel
 from smartsim._core.mli.infrastructure.storage.feature_store import FeatureStore
 
 from .....log import get_logger
@@ -203,7 +202,7 @@ class WorkerManager(Service):
                     "and will not be processed."
                 exception_handler(
                     RuntimeError(msg),
-                    DragonCommChannel.from_descriptor(callback_desc),
+                    self._callback_factory(callback_desc),
                     "Error acquiring device manager",
                 )
             return
@@ -218,7 +217,7 @@ class WorkerManager(Service):
             for callback_desc in batch.callback_descriptors:
                 exception_handler(
                     exc,
-                    DragonCommChannel.from_descriptor(callback_desc),
+                    self._callback_factory(callback_desc),
                     "Error loading model on device or getting device.",
                 )
             return
@@ -232,7 +231,7 @@ class WorkerManager(Service):
                 for callback_desc in batch.callback_descriptors:
                     exception_handler(
                         exc,
-                        DragonCommChannel.from_descriptor(callback_desc),
+                        self._callback_factory(callback_desc),
                         "Error getting model from device.",
                     )
                 return
@@ -242,7 +241,7 @@ class WorkerManager(Service):
                 for callback_desc in batch.callback_descriptors:
                     exception_handler(
                         ValueError("Error batching inputs"),
-                        DragonCommChannel.from_descriptor(callback_desc),
+                        self._callback_factory(callback_desc),
                         None,
                     )
                 return
@@ -256,7 +255,7 @@ class WorkerManager(Service):
                 for callback_desc in batch.callback_descriptors:
                     exception_handler(
                         e,
-                        DragonCommChannel.from_descriptor(callback_desc),
+                        self._callback_factory(callback_desc),
                         "Error while executing.",
                     )
                 return
@@ -270,7 +269,7 @@ class WorkerManager(Service):
                 for callback_desc in batch.callback_descriptors:
                     exception_handler(
                         e,
-                        DragonCommChannel.from_descriptor(callback_desc),
+                        self._callback_factory(callback_desc),
                         "Error while transforming the output.",
                     )
                 return
@@ -294,7 +293,7 @@ class WorkerManager(Service):
                     except Exception as e:
                         exception_handler(
                             e,
-                            DragonCommChannel.from_descriptor(callback_desc),
+                            self._callback_factory(callback_desc),
                             "Error while placing the output.",
                         )
                         continue
@@ -322,7 +321,7 @@ class WorkerManager(Service):
 
                 self._perf_timer.measure_time("serialize_resp")
 
-                callback = DragonCommChannel.from_descriptor(callback_desc)
+                callback = self._callback_factory(callback_desc)
                 callback.send(serialized_resp)
                 if reply.has_outputs:
                     for output in reply.outputs:

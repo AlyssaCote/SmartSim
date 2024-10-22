@@ -36,7 +36,6 @@ from dataclasses import dataclass
 
 from .....error import SmartSimError
 from .....log import get_logger
-from ...comm.channel.channel import CommChannelBase
 from ...message_handler import MessageHandler
 from ...mli_schemas.model.model_capnp import Model
 from ...mli_schemas.tensor.tensor_capnp import TensorDescriptor
@@ -420,13 +419,10 @@ class MachineLearningWorkerCore:
     @staticmethod
     def deserialize_message(
         data_blob: bytes,
-        callback_factory: t.Callable[[str], CommChannelBase],
     ) -> InferenceRequest:
         """Deserialize a message from a byte stream into an InferenceRequest.
 
         :param data_blob: The byte stream to deserialize
-        :param callback_factory: A factory method that can create an instance
-        of the desired concrete comm channel type
         :returns: The raw input message deserialized into an InferenceRequest
         """
         request = MessageHandler.deserialize_request(data_blob)
@@ -442,7 +438,6 @@ class MachineLearningWorkerCore:
             model_bytes = request.model.data
 
         callback_key = request.replyChannel.descriptor
-        comm_channel_desc = callback_factory(callback_key).descriptor
         input_keys: t.Optional[t.List[TensorKey]] = None
         input_bytes: t.Optional[t.List[bytes]] = None
         output_keys: t.Optional[t.List[TensorKey]] = None
@@ -464,7 +459,7 @@ class MachineLearningWorkerCore:
 
         inference_request = InferenceRequest(
             model_key=model_key,
-            callback_desc=comm_channel_desc,
+            callback_desc=callback_key,
             raw_inputs=input_bytes,
             input_meta=input_meta,
             input_keys=input_keys,

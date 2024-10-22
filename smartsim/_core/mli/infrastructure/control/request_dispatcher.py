@@ -43,7 +43,6 @@ import uuid
 from queue import Empty, Full, Queue
 
 from smartsim._core.entrypoints.service import Service
-from smartsim._core.mli.comm.channel.dragon_channel import DragonCommChannel
 
 from .....error import SmartSimError
 from .....log import get_logger
@@ -377,9 +376,7 @@ class RequestDispatcher(Service):
             tensor_bytes_list = bytes_list[1:]
             self._perf_timer.start_timings()
 
-            request = self._worker.deserialize_message(
-                request_bytes, self._callback_factory
-            )
+            request = self._worker.deserialize_message(request_bytes)
             if request.has_input_meta and tensor_bytes_list:
                 request.raw_inputs = tensor_bytes_list
 
@@ -389,7 +386,7 @@ class RequestDispatcher(Service):
                 exception_handler(
                     ValueError("Error validating the request"),
                     (
-                        DragonCommChannel.from_descriptor(request.callback_desc)
+                        self._callback_factory(request.callback_desc)
                         if request.callback_desc
                         else None
                     ),
