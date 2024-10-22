@@ -494,7 +494,7 @@ class RequestDispatcher(Service):
                     self._perf_timer.measure_time("find_queue")
                     try:
                         batch = RequestBatch.from_requests(
-                            queue.flush(), None, queue.model_id
+                            queue.flush(), queue.model_id
                         )
                     finally:
                         self._perf_timer.measure_time("flush_requests")

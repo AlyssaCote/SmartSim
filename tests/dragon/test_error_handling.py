@@ -139,8 +139,11 @@ def setup_worker_manager_model_bytes(
 
     request_batch = RequestBatch.from_requests(
         [inf_request],
-        TransformInputResult(b"transformed", [slice(0, 1)], [[1, 2]], ["float32"]),
         model_id,
+    )
+
+    request_batch.inputs = TransformInputResult(
+        b"transformed", [slice(0, 1)], [[1, 2]], ["float32"]
     )
 
     dispatcher_task_queue.put(request_batch)
@@ -195,8 +198,11 @@ def setup_worker_manager_model_key(
     )
     request_batch = RequestBatch.from_requests(
         [request],
-        TransformInputResult(b"transformed", [slice(0, 1)], [[1, 2]], ["float32"]),
         model_id,
+    )
+
+    request_batch.inputs = TransformInputResult(
+        b"transformed", [slice(0, 1)], [[1, 2]], ["float32"]
     )
 
     dispatcher_task_queue.put(request_batch)

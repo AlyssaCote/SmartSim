@@ -285,7 +285,7 @@ def test_request_batch(test_dir: str) -> None:
     )
 
     request_batch = RequestBatch.from_requests(
-        [request1, request2, request3], None, req_batch_model_id
+        [request1, request2, request3], req_batch_model_id
     )
 
     assert len(request_batch.callbacks) == 3

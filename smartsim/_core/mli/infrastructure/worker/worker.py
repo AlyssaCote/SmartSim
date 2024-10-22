@@ -370,7 +370,6 @@ class RequestBatch:
     def from_requests(
         cls,
         requests: t.List[InferenceRequest],
-        inputs: t.Optional[TransformInputResult],
         model_id: ModelIdentifier,
     ) -> "RequestBatch":
         """Create a RequestBatch from a list of requests.
@@ -406,7 +405,7 @@ class RequestBatch:
                 for request in requests
                 if request.callback and request.output_keys
             },
-            inputs=inputs,
+            inputs=None,
             model_id=model_id,
         )
 

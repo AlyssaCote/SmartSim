@@ -121,12 +121,11 @@ def get_request() -> InferenceRequest:
 
 
 def get_request_batch_from_request(
-    request: InferenceRequest, inputs: t.Optional[TransformInputResult] = None
+    request: InferenceRequest,
 ) -> RequestBatch:
 
     return RequestBatch.from_requests(
         [request],
-        inputs,
         request.model_key,
     )
 
@@ -191,7 +190,7 @@ def test_execute(mlutils) -> None:
         sample_request_batch.raw_inputs, sample_request_batch.input_meta
     )
 
-    request_batch = get_request_batch_from_request(sample_request, fetch_input_result)
+    request_batch = get_request_batch_from_request(sample_request)
 
     mem_pool = MemoryPool.attach(dragon_gs_pool.create(1024**2).sdesc)
 
