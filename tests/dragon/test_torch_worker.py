@@ -188,7 +188,7 @@ def test_execute(mlutils) -> None:
         Net().to(torch_device[mlutils.get_test_device().lower()])
     )
     fetch_input_result = FetchInputResult(
-        sample_request.raw_inputs, sample_request.input_meta
+        sample_request_batch.raw_inputs, sample_request_batch.input_meta
     )
 
     request_batch = get_request_batch_from_request(sample_request, fetch_input_result)
@@ -196,7 +196,7 @@ def test_execute(mlutils) -> None:
     mem_pool = MemoryPool.attach(dragon_gs_pool.create(1024**2).sdesc)
 
     transform_result = worker.transform_input(
-        request_batch, [fetch_input_result], mem_pool
+        request_batch, fetch_input_result, mem_pool
     )
 
     execute_result = worker.execute(
