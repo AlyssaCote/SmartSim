@@ -251,8 +251,15 @@ def filter_assets(
         asset = next((asset for asset in assets if _platform_filter(asset.name)), None)
 
     if not asset:
+        # we're here because there is a mismatch between the platform and the asset
         asset = assets[0]
-        logger.warning(f"Platform-specific package not found. Using {asset.name}")
+        if "crayex" in asset.name.lower():
+            # we're on a non-Cray platform, but the asset is for CrayEX
+            logger.warning(f"Platform does not support CRAYEX assets.")
+            asset = None
+        else:
+            # we're on a Cray platform, but the asset is not for CrayEX
+            logger.warning(f"Platform-specific package not found. Using {asset.name}")
 
     return asset
 
