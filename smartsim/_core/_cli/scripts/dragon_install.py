@@ -130,7 +130,7 @@ def _platform_filter(asset_name: str) -> bool:
 
     :param asset_name: A value to inspect for keywords indicating a Cray EX asset
     :returns: True if supplied value is correct for current platform"""
-    key = "crayex"
+    key = "hsn"
     is_cray = key in asset_name.lower()
     if is_crayex_platform():
         return is_cray
@@ -253,12 +253,12 @@ def filter_assets(
     if not asset:
         # we're here because there is a mismatch between the platform and the asset
         asset = assets[0]
-        if "crayex" in asset.name.lower():
-            # we're on a non-Cray platform, but the asset is for CrayEX
-            logger.warning(f"Platform does not support CRAYEX assets.")
+        if "hsn" in asset.name.lower():
+            # we're on a non-Cray platform, and the asset is HSN
+            logger.warning(f"Platform does not support HSN assets")
             asset = None
         else:
-            # we're on a Cray platform, but the asset is not for CrayEX
+            # we're on a Cray platform, and the asset is not HSN
             logger.warning(f"Platform-specific package not found. Using {asset.name}")
 
     return asset
