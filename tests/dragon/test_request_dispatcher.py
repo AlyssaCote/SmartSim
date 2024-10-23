@@ -238,6 +238,7 @@ def test_request_dispatcher(
 
 
 def test_request_batch(test_dir: str) -> None:
+    """Test the RequestBatch.from_requests instantiates properly"""
     tensor_key = TensorKey(key="key", descriptor="desc1")
     tensor_key2 = TensorKey(key="key2", descriptor="desc1")
     output_key = TensorKey(key="key", descriptor="desc2")
@@ -309,3 +310,13 @@ def test_request_batch(test_dir: str) -> None:
         callback1: [output_key],
         callback2: [output_key, output_key2],
     }
+
+
+def test_request_batch_has_no_callbacks():
+    """Verify that a request batch with no callbacks is correctly identified"""
+    request1 = InferenceRequest()
+    request2 = InferenceRequest()
+
+    batch = RequestBatch.from_requests([request1, request2], ModelKey("model", "desc"))
+
+    assert not batch.has_callbacks

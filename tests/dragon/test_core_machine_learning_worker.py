@@ -337,6 +337,36 @@ def test_fetch_input_memory(persist_torch_tensor: pathlib.Path) -> None:
     assert fetch_result.inputs[0] is not None
 
 
+def test_fetch_inputs_no_input_source():
+    """Verify that the ML worker fails when there are no inputs provided"""
+    worker = MachineLearningWorkerCore
+    request1 = InferenceRequest()
+    request2 = InferenceRequest()
+
+    batch = RequestBatch.from_requests(
+        [request1, request2], ModelKey("test-model", "desc")
+    )
+
+    with pytest.raises(ValueError) as exc:
+        fetch_result = worker.fetch_inputs(batch, {})
+    assert str(exc.value) == "No input source"
+
+
+def test_fetch_inputs_no_feature_store():
+    """Verify that the ML worker fails when there is no feature store"""
+    worker = MachineLearningWorkerCore
+    request1 = InferenceRequest(raw_inputs=[b"abcdef"])
+    request2 = InferenceRequest(raw_inputs=[b"ghijkl"])
+
+    batch = RequestBatch.from_requests(
+        [request1, request2], ModelKey("test-model", "desc")
+    )
+
+    with pytest.raises(ValueError) as exc:
+        fetch_result = worker.fetch_inputs(batch, {})
+    assert str(exc.value) == "No feature stores provided"
+
+
 def test_place_outputs(test_dir: str) -> None:
     """Verify outputs are shared using the feature store"""
     worker = MachineLearningWorkerCore

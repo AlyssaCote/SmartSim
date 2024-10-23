@@ -270,7 +270,7 @@ class FetchInputResult:
     def __init__(
         self,
         result: t.List[t.List[bytes]],
-        meta: t.Optional[t.List[t.List[TensorMeta]]],
+        meta: t.List[t.List[t.Optional[TensorMeta]]],
     ) -> None:
         """Initialize the FetchInputResult.
 
@@ -547,13 +547,19 @@ class MachineLearningWorkerCore:
         if not batch.raw_inputs and not batch.input_keys:
             raise ValueError("No input source")
 
-        if batch.raw_inputs:
-            return FetchInputResult(batch.raw_inputs, batch.input_meta)
-
         if not feature_stores:
             raise ValueError("No feature stores provided")
 
-        data: t.List[t.List[bytes]] = []
+        data_list: t.List[t.List[bytes]] = []
+        meta_list: t.List[t.List[t.Optional[TensorMeta]]] = []
+        # meta_list will be t.List[t.List[TensorMeta]] once input_key metadata
+        # is available to be retrieved from the feature store
+
+        if batch.raw_inputs:
+            for raw_inputs, input_meta in zip(batch.raw_inputs, batch.input_meta):
+                data_list.append(raw_inputs)
+                meta_list.append(input_meta)  # type: ignore
+
         if batch.input_keys:
             for batch_keys in batch.input_keys:
                 batch_data: t.List[bytes] = []
@@ -567,10 +573,12 @@ class MachineLearningWorkerCore:
                         raise SmartSimError(
                             f"Tensor could not be retrieved with key {fs_key.key}"
                         ) from ex
-                data.append(batch_data)
+                data_list.append(batch_data)
+                meta_list.append([None] * len(batch_data))
+                # fixme: need to get both tensor and descriptor
+                # this will eventually append meta info retrieved from the feature store
 
-        return FetchInputResult(result=data, meta=None)
-        # fixme: need to get both tensor and descriptor
+        return FetchInputResult(result=data_list, meta=meta_list)
 
     @staticmethod
     def place_output(

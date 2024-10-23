@@ -128,7 +128,7 @@ class TorchWorker(MachineLearningWorkerBase):
                 item_meta is None for item_meta in res_meta_list
             ):
                 raise ValueError("Cannot reconstruct tensor without meta information")
-            first_tensor_desc: TensorMeta = res_meta_list[0]
+            first_tensor_desc: TensorMeta = res_meta_list[0]  # type: ignore
             num_samples = first_tensor_desc.dimensions[0]
             slices.append(slice(total_samples, total_samples + num_samples))
             total_samples = total_samples + num_samples
@@ -139,7 +139,7 @@ class TorchWorker(MachineLearningWorkerBase):
                 # last N-1 dimensions match across inputs for corresponding tensors
                 # thus: resulting array will be of size (num_samples, all_other_dims)
                 for item_meta in res_meta_list:
-                    tensor_desc: TensorMeta = item_meta
+                    tensor_desc: TensorMeta = item_meta  # type: ignore
                     tensor_dims = tensor_desc.dimensions
                     all_dims.append([total_samples, *tensor_dims[1:]])
                     all_dtypes.append(tensor_desc.datatype)
