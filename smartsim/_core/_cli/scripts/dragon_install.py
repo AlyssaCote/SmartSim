@@ -274,9 +274,9 @@ def retrieve_asset_info(request: DragonInstallRequest) -> GitReleaseAsset:
 
     platform_result = check_platform()
     if not platform_result.is_cray:
-        logger.warning("Installing Dragon without HSTA support")
         for msg in platform_result.failures:
             logger.warning(msg)
+        logger.warning("Installing Dragon without HSTA support")
 
     if asset is None:
         raise SmartSimCLIActionCancelled("No dragon runtime asset available to install")
