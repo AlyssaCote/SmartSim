@@ -550,29 +550,52 @@ def test_create_dotenv_format(monkeypatch: pytest.MonkeyPatch, test_dir: str):
             line_split = line.split("=")
             assert len(line_split) == 2
 
+
 @pytest.mark.parametrize(
     "_platform_filter_return,asset_name,returned_asset_bool",
     [
-        pytest.param(True, "dragon-0.10-py3.9.4.1-CRAYEX.tar.gz", True,id="cray platform, crayex in name"),
-        pytest.param(False, "dragon-0.10-py3.9.4.1-CRAYEX.tar.gz", False,id="non cray platform, crayex in name"),
-        pytest.param(False, "dragon-0.10-py3.9.4.1-.tar.gz", True, id="cray platform, crayex not in name"),
-        pytest.param(True, "dragon-0.10-py3.9.4.1-.tar.gz", True, id="non cray platform, crayex not in name"),
+        pytest.param(
+            True,
+            "dragon-0.10-py3.9.4.1-CRAYEX.tar.gz",
+            True,
+            id="cray platform, crayex in name",
+        ),
+        pytest.param(
+            False,
+            "dragon-0.10-py3.9.4.1-CRAYEX.tar.gz",
+            False,
+            id="non cray platform, crayex in name",
+        ),
+        pytest.param(
+            False,
+            "dragon-0.10-py3.9.4.1-.tar.gz",
+            True,
+            id="cray platform, crayex not in name",
+        ),
+        pytest.param(
+            True,
+            "dragon-0.10-py3.9.4.1-.tar.gz",
+            True,
+            id="non cray platform, crayex not in name",
+        ),
     ],
 )
-def test_filter_assets(monkeypatch, test_dir,_platform_filter_return,asset_name,returned_asset_bool):
+def test_filter_assets(
+    monkeypatch, test_dir, _platform_filter_return, asset_name, returned_asset_bool
+):
     request = DragonInstallRequest(test_dir, version="0.10")
     monkeypatch.setattr(
         "smartsim._core._cli.scripts.dragon_install._platform_filter",
         MagicMock(return_value=_platform_filter_return),
-        )
+    )
     monkeypatch.setattr(
         "smartsim._core._cli.scripts.dragon_install._version_filter",
         MagicMock(return_value=True),
-        )
+    )
     monkeypatch.setattr(
         "smartsim._core._cli.scripts.dragon_install._pin_filter",
         MagicMock(return_value=True),
-        )
+    )
     mocked_asset = MagicMock()
     mocked_asset.name = asset_name
     asset = filter_assets(request, [mocked_asset])
