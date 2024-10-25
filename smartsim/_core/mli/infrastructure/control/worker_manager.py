@@ -41,7 +41,7 @@ from queue import Empty
 from smartsim._core.mli.infrastructure.storage.feature_store import FeatureStore
 
 from .....log import get_logger
-from ....entrypoints.service import Service
+from ....entrypoints.service import ResourceType, Service
 from ....utils.timings import PerfTimer
 from ...message_handler import MessageHandler
 from ..environment_loader import EnvironmentConfigLoader
@@ -187,6 +187,10 @@ class WorkerManager(Service):
             )
             return
 
+        for request in batch.requests:
+            if request.callback:
+                self.track_resource(ResourceType.CHANNEL, request.callback.descriptor)
+
         if not self._device_manager:
             for request in batch.requests:
                 msg = "No Device Manager found. WorkerManager._on_start() "
@@ -327,4 +331,6 @@ class WorkerManager(Service):
         # if time_diff.total_seconds() > self._cooldown:
         #     return True
         # return False
-        return self._worker is None
+
+        # return self._worker is None and(or) self.trigger_shutdown
+        return self.trigger_shutdown or self._worker is None

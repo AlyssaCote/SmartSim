@@ -42,7 +42,8 @@ import typing as t
 import uuid
 from queue import Empty, Full, Queue
 
-from smartsim._core.entrypoints.service import Service
+from smartsim._core.entrypoints.service import ResourceType, Service
+from smartsim._core.mli.comm.channel.dragon_util import pool_to_descriptor
 
 from .....error import SmartSimError
 from .....log import get_logger
@@ -260,6 +261,8 @@ class RequestDispatcher(Service):
         """Memory pool used to share batched input tensors with the Worker Managers"""
         self._perf_timer = PerfTimer(prefix="r_", debug=False, timing_on=True)
         """Performance timer"""
+
+        self.track_resource(ResourceType.MEM_POOL, pool_to_descriptor(self._mem_pool))
 
     @property
     def has_featurestore_factory(self) -> bool:
@@ -548,7 +551,10 @@ class RequestDispatcher(Service):
 
         :returns: False
         """
-        return False
+
+        # when sigint is caught, this should return true
+        # return self.trigger_shutdown?
+        return self.trigger_shutdown
 
     def __del__(self) -> None:
         """Destroy allocated memory resources."""

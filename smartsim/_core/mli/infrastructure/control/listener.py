@@ -40,9 +40,12 @@ import os
 import sys
 import typing as t
 
-from smartsim._core.entrypoints.service import Service
+from smartsim._core.entrypoints.service import ResourceType, Service
 from smartsim._core.mli.comm.channel.dragon_channel import DragonCommChannel
-from smartsim._core.mli.comm.channel.dragon_util import create_local
+from smartsim._core.mli.comm.channel.dragon_util import (
+    channel_to_descriptor,
+    create_local,
+)
 from smartsim._core.mli.infrastructure.comm.consumer import EventConsumer
 from smartsim._core.mli.infrastructure.comm.event import (
     EventBase,
@@ -96,6 +99,12 @@ class ConsumerRegistrationListener(Service):
         self._backbone = backbone
         """A standalone, system-created feature store used to share internal
         information among MLI components"""
+
+        if self._consumer:
+            self.track_resource(
+                ResourceType.CHANNEL,
+                channel_to_descriptor(self._consumer._comm_channel._channel),
+            )
 
     def _on_start(self) -> None:
         """Called on initial entry into Service `execute` event loop before
@@ -157,7 +166,7 @@ class ConsumerRegistrationListener(Service):
             )
             return True
 
-        return False
+        return self.trigger_shutdown
 
     def _on_unregister(self, event: OnRemoveConsumer) -> None:
         """Event handler for updating the backbone when event consumers
@@ -254,6 +263,8 @@ class ConsumerRegistrationListener(Service):
         logger.info("Creating event consumer")
 
         dragon_channel = create_local(500)
+        self.track_resource(ResourceType.CHANNEL, channel_to_descriptor(dragon_channel))
+
         event_channel = DragonCommChannel(dragon_channel)
 
         if not event_channel.descriptor:
