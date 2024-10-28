@@ -24,16 +24,24 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import io
+import logging
+import os
 
 import numpy as np
-import torch
+import tensorflow as tf
+
+# pylint: disable-next=no-name-in-module
+from tensorflow.python.framework.ops import disable_eager_execution
+
+# isort: off
+# isort: on
 
 # pylint: disable=import-error
 from dragon.managed_memory import MemoryAlloc, MemoryPool
 
 from .....error import SmartSimError
 from .....log import get_logger
+from ...mli_schemas.tensor import tensor_capnp
 from .worker import (
     ExecuteResult,
     FetchInputResult,
@@ -41,7 +49,6 @@ from .worker import (
     LoadModelResult,
     MachineLearningWorkerBase,
     RequestBatch,
-    TensorMeta,
     TransformInputResult,
     TransformOutputResult,
 )
@@ -49,13 +56,15 @@ from .worker import (
 # pylint: enable=import-error
 
 
-torch.set_num_threads(1)
-torch.set_num_interop_threads(4)
+tf.get_logger().setLevel(logging.ERROR)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 logger = get_logger(__name__)
 
+disable_eager_execution()
 
-class TorchWorker(MachineLearningWorkerBase):
-    """A worker that executes a PyTorch model."""
+
+class TensorFlowWorker(MachineLearningWorkerBase):
+    """A worker that executes a TensorFlow model."""
 
     @staticmethod
     def load_model(
@@ -64,8 +73,8 @@ class TorchWorker(MachineLearningWorkerBase):
         """Given a loaded MachineLearningModel, ensure it is loaded into
         device memory.
 
-        :param batch: The batch that triggered the pipeline
-        :param fetch_result: The fetched model
+        :param request: The request that triggered the pipeline
+        :param fetch_result: Raw outputs from fetching model
         :param device: The device on which the model must be placed
         :returns: LoadModelResult wrapping the model loaded for the request
         :raises ValueError: If model reference object is not found
@@ -78,76 +87,112 @@ class TorchWorker(MachineLearningWorkerBase):
         else:
             raise ValueError("Unable to load model without reference object")
 
-        device_to_torch = {"cpu": "cpu", "gpu": "cuda"}
-        for old, new in device_to_torch.items():
+        device_to_tf = {"cpu": "/CPU", "gpu": "/GPU"}
+        for old, new in device_to_tf.items():
             device = device.replace(old, new)
 
-        buffer = io.BytesIO(initial_bytes=model_bytes)
         try:
-            with torch.no_grad():
-                model = torch.jit.load(buffer, map_location=device)  # type: ignore
-                model.eval()
+            graph_def = tf.compat.v1.GraphDef()
+            graph_def.ParseFromString(model_bytes)
+
+            # pylint: disable-next=not-context-manager
+            with tf.Graph().as_default() as graph, tf.device(device):
+                tf.import_graph_def(graph_def, name="")
+            ops = graph.get_operations()
         except Exception as e:
             raise RuntimeError(
                 "Failed to load and evaluate the model: "
                 f"Model key {batch.model_id.key}, Device {device}"
             ) from e
-        try:
-            model = torch.compile(model, dynamic=True)
-        except Exception as exc:
-            logger.info("Could not compile Torch model, original exception: ")
-            logger.info(exc)
-        result = LoadModelResult(model)
+
+        input_layers = set()
+        for operation in ops:
+            if operation.type == "Placeholder":
+                logger.debug(
+                    f"Input op name: {operation.name}, "
+                    f"output shape: {operation.outputs[0].get_shape()}"
+                )
+                input_layers.add(f"{operation.name}:0")
+
+        # Code initially taken from
+        # apple.github.io/coremltools/docs-guides/source/tensorflow-1-workflow.html
+        output_tensors = set()
+        input_tensors = set()
+        for operation in ops:
+            for x in operation.inputs:
+                input_tensors.add(x.name)
+        for operation in ops:
+            if len(operation.outputs) > 0:
+                x = operation.outputs[0]
+                potential_names = [x.name]
+                name_split = x.name.split(":")
+                potential_names.append(
+                    ":".join((name_split[0] + "/resource", name_split[-1]))
+                )
+                if all(name not in input_tensors for name in potential_names):
+                    logger.debug(
+                        f"Output tensor name: {x.name}, "
+                        f"tensor shape: {x.get_shape()}, "
+                        f"parent op type: {operation.type}"
+                    )
+                    output_tensors.add(x.name)
+
+        with tf.device(device):
+            result = LoadModelResult(
+                tf.compat.v1.Session(graph=graph),
+                list(input_layers),
+                list(output_tensors),
+            )
         return result
 
     @staticmethod
     def transform_input(
         batch: RequestBatch,
-        fetch_results: FetchInputResult,
+        fetch_results: list[FetchInputResult],
         mem_pool: MemoryPool,
     ) -> TransformInputResult:
         """Given a collection of data, perform a transformation on the data and put
         the raw tensor data on a MemoryPool allocation.
 
-        :param batch: The batch that triggered the pipeline
-        :param fetch_result: Raw outputs from fetching inputs out of a feature store
+        :param batch: The request batch that triggered the pipeline
+        :param fetch_result: Raw outputs from fetching inputs
         :param mem_pool: The memory pool used to access batched input tensors
         :returns: The transformed inputs wrapped in a TransformInputResult
         :raises ValueError: If tensors cannot be reconstructed
         :raises IndexError: If index out of range
         """
-        results: list[torch.Tensor] = []
+        results: list[memoryview] = []
         total_samples = 0
         slices: list[slice] = []
 
         all_dims: list[list[int]] = []
         all_dtypes: list[str] = []
-        if fetch_results.meta is None:
+        if fetch_results[0].meta is None:
             raise ValueError("Cannot reconstruct tensor without meta information")
         # Traverse inputs to get total number of samples and compute slices
         # Assumption: first dimension is samples, all tensors in the same input
         # have same number of samples
         # thus we only look at the first tensor for each input
-        for res_idx, res_meta_list in enumerate(fetch_results.meta):
-            if res_meta_list is None or any(
-                item_meta is None for item_meta in res_meta_list
+        for res_idx, fetch_result in enumerate(fetch_results):
+            if fetch_result.meta is None or any(
+                item_meta is None for item_meta in fetch_result.meta
             ):
                 raise ValueError("Cannot reconstruct tensor without meta information")
-            first_tensor_desc: TensorMeta = res_meta_list[0]  # type: ignore
+            first_tensor_desc: tensor_capnp.TensorDescriptor = fetch_result.meta[0]
             num_samples = first_tensor_desc.dimensions[0]
             slices.append(slice(total_samples, total_samples + num_samples))
             total_samples = total_samples + num_samples
 
-            if res_idx == len(fetch_results.meta) - 1:
+            if res_idx == len(fetch_results) - 1:
                 # For each tensor in the last input, get remaining dimensions
                 # Assumptions: all inputs have the same number of tensors and
                 # last N-1 dimensions match across inputs for corresponding tensors
                 # thus: resulting array will be of size (num_samples, all_other_dims)
-                for item_meta in res_meta_list:
-                    tensor_desc: TensorMeta = item_meta  # type: ignore
-                    tensor_dims = tensor_desc.dimensions
+                for item_meta in fetch_result.meta:
+                    tensor_desc: tensor_capnp.TensorDescriptor = item_meta
+                    tensor_dims = list(tensor_desc.dimensions)
                     all_dims.append([total_samples, *tensor_dims[1:]])
-                    all_dtypes.append(tensor_desc.datatype)
+                    all_dtypes.append(str(tensor_desc.dataType))
 
         for result_tensor_idx, (dims, dtype) in enumerate(zip(all_dims, all_dtypes)):
             itemsize = np.empty((1), dtype=dtype).itemsize
@@ -155,12 +200,13 @@ class TorchWorker(MachineLearningWorkerBase):
             mem_alloc = mem_pool.alloc(alloc_size)
             mem_view = mem_alloc.get_memview()
             try:
-                mem_view[:alloc_size] = b"".join(
+                joined = b"".join(
                     [
-                        fetch_result[result_tensor_idx]
-                        for fetch_result in fetch_results.inputs
+                        fetch_result.inputs[result_tensor_idx]
+                        for fetch_result in fetch_results
                     ]
                 )
+                mem_view[:alloc_size] = joined
             except IndexError as e:
                 raise IndexError(
                     "Error accessing elements in fetch_result.inputs "
@@ -192,8 +238,8 @@ class TorchWorker(MachineLearningWorkerBase):
         """
         if not load_result.model:
             raise SmartSimError("Model must be loaded to execute")
-        device_to_torch = {"cpu": "cpu", "gpu": "cuda"}
-        for old, new in device_to_torch.items():
+        device_to_tf = {"cpu": "/CPU", "gpu": "/GPU"}
+        for old, new in device_to_tf.items():
             device = device.replace(old, new)
 
         tensors = []
@@ -206,30 +252,25 @@ class TorchWorker(MachineLearningWorkerBase):
             itemsize = np.empty((1), dtype=dtype).itemsize
             try:
                 tensors.append(
-                    torch.from_numpy(
-                        np.frombuffer(
-                            mem_alloc.get_memview()[0 : np.prod(dims) * itemsize],
-                            dtype=dtype,
-                        ).reshape(dims)
-                    )
+                    np.frombuffer(
+                        mem_alloc.get_memview()[0 : np.prod(dims) * itemsize],
+                        dtype=dtype,
+                    ).reshape(dims)
                 )
             except IndexError as e:
                 raise IndexError("Error during memory slicing") from e
             except Exception as e:
                 raise ValueError("Error during tensor creation") from e
 
-        model: torch.nn.Module = load_result.model
+        sess = load_result.model
+        if load_result.inputs is None:
+            raise ValueError("Model was stored without inputs")
         try:
-            with torch.no_grad():
-                model.eval()
-                results = [
-                    model(
-                        *[
-                            tensor.to(device, non_blocking=True).detach()
-                            for tensor in tensors
-                        ]
-                    )
-                ]
+            with tf.device(device):
+                results = sess.run(
+                    load_result.outputs,
+                    feed_dict=dict(zip(load_result.inputs, tensors)),
+                )
         except Exception as e:
             raise ValueError(
                 f"Error while evaluating the model: Model {batch.model_id.key}"
@@ -257,14 +298,13 @@ class TorchWorker(MachineLearningWorkerBase):
         :raises ValueError: If transforming output fails
         """
         transformed_list: list[TransformOutputResult] = []
-        cpu_predictions = [
-            prediction.cpu() for prediction in execute_result.predictions
-        ]
+        cpu_predictions = execute_result.predictions
+
         for result_slice in execute_result.slices:
             transformed = []
             for cpu_item in cpu_predictions:
                 try:
-                    transformed.append(cpu_item[result_slice].numpy().tobytes())
+                    transformed.append(cpu_item[result_slice].tobytes())
 
                     # todo: need the shape from latest schemas added here.
                     transformed_list.append(
