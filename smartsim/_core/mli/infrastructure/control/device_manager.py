@@ -133,10 +133,18 @@ class DeviceManager:
         :param batch: The batch for which the model is needed
         :param feature_stores: Feature stores where the model could be stored
         """
-
-        model_bytes = worker.fetch_model(batch, feature_stores)
-        loaded_model = worker.load_model(batch, model_bytes, self._device.name)
-        self._device.add_model(batch.model_id.key, loaded_model)
+        try:
+            model_bytes = worker.fetch_model(batch, feature_stores)
+        except Exception as e:
+            raise e
+        try:
+            loaded_model = worker.load_model(batch, model_bytes, self._device.name)
+        except Exception as e:
+            raise e
+        try:
+            self._device.add_model(batch.model_id.key, loaded_model)
+        except Exception as e:
+            raise e
 
     def get_device(
         self,

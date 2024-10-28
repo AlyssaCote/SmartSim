@@ -237,6 +237,7 @@ class ProtoClient:
             self.perf_timer.measure_time("receive_response")
             response = MessageHandler.deserialize_response(resp)
             self.perf_timer.measure_time("deserialize_response")
+            logger.info(f"Response: {response.to_dict()}")
 
             # recv depending on the len(response.result.descriptors)?
             data_blob: bytes = from_recvh.recv_bytes(timeout=None)

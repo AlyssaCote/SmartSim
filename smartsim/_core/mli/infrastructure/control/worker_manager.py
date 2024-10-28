@@ -222,13 +222,14 @@ class WorkerManager(Service):
                 feature_stores=self._feature_stores,
             )
         except Exception as exc:
-            for callback_desc in batch.callback_descriptors:
-                exception_handler(
-                    exc,
-                    self._callback_factory(callback_desc),
-                    "Error loading model on device or getting device.",
-                )
-            return
+            raise exc
+            # for callback_desc in batch.callback_descriptors:
+            #     exception_handler(
+            #         exc,
+            #         self._callback_factory(callback_desc),
+            #         "Error loading model on device or getting device.",
+            #     )
+            # return
         self._perf_timer.measure_time("fetch_model")
 
         with device_cm as device:

@@ -379,7 +379,7 @@ class RequestDispatcher(Service):
             request = None
             try:
                 request = self._worker.deserialize_message(
-                    request_bytes, self._callback_factory
+                    request_bytes
                 )
             except Exception as exc:
                 exception_handler(exc, None, "Error deserializing request")

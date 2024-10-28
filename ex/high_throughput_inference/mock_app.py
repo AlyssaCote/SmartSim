@@ -105,7 +105,7 @@ if __name__ == "__main__":
 
     comm_world.Barrier()
 
-    TOTAL_ITERATIONS = 100
+    TOTAL_ITERATIONS = 2
 
     for log2_bsize in range(args.log_max_batchsize, args.log_max_batchsize + 1):
         b_size: int = 2**log2_bsize
