@@ -27,6 +27,7 @@
 import datetime
 import multiprocessing as mp
 import pathlib
+import signal
 import time
 import typing as t
 from asyncore import loop
@@ -35,7 +36,7 @@ import pytest
 import torch
 
 import smartsim.error as sse
-from smartsim._core.entrypoints.service import Service
+from smartsim._core.entrypoints.service import Service, SIGNALS
 
 # The tests in this file belong to the group_b group
 pytestmark = pytest.mark.group_a
@@ -288,3 +289,28 @@ def test_service_health_check_freq_unbound() -> None:
     assert service.num_health_checks == service.num_iterations
     assert service.num_cooldowns == 0
     assert service.num_shutdowns == 1
+
+
+@pytest.mark.parametrize(
+    "sig",
+    [
+        pytest.param(signal.SIGINT, id="SIGINT"),
+        pytest.param(signal.SIGTERM, id="SIGTERM"),
+        pytest.param(signal.SIGQUIT, id="SIGQUIT"),
+        pytest.param(signal.SIGABRT, id="SIGABRT"),
+    ],
+)
+def test_handle_signal(sig: signal.Signals):
+    """Verify that the handle_signal method sets the trigger_shutdown flag."""
+    service = SimpleService(log=[])
+    
+    assert service.trigger_shutdown == False
+    service.handle_signal(sig)
+    assert service.trigger_shutdown == True
+
+def test_register_signal_handlers():
+    """Verify that the register_signal_handlers method registers the signal handlers."""
+    service = SimpleService(log=[])
+
+    for sig in SIGNALS:
+        assert signal.getsignal(sig) == service.handle_signal
