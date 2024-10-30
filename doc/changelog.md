@@ -13,6 +13,10 @@ Jump to:
 
 Description
 
+- RequestBatch rewrite
+- Fix regression on hostlist param to DragonRunRequest
+- Fix dragon build logging bug
+- Merge core refactor into MLI feature branch
 - Implement asynchronous notifications for shared data
 - Quick bug fix in _validate
 - Add helper methods to MLI classes
