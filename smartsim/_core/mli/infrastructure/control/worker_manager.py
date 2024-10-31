@@ -26,7 +26,10 @@
 
 # pylint: disable=import-error
 # pylint: disable-next=unused-import
+import base64
+
 import dragon
+import dragon.channels as dch
 
 # pylint: enable=import-error
 
@@ -41,7 +44,7 @@ from queue import Empty
 from smartsim._core.mli.infrastructure.storage.feature_store import FeatureStore
 
 from .....log import get_logger
-from ....entrypoints.service import ResourceType, Service
+from ....entrypoints.service import DragonShutdownResource, Service
 from ....utils.timings import PerfTimer
 from ...message_handler import MessageHandler
 from ..environment_loader import EnvironmentConfigLoader
@@ -189,9 +192,12 @@ class WorkerManager(Service):
             )
             return
 
-        for request in batch.requests:
-            if request.callback:
-                self.track_resource(ResourceType.CHANNEL, request.callback.descriptor)
+        for callback_desc in batch.callback_descriptors:
+            self.track_resource(
+                DragonShutdownResource(
+                    base64.b64decode(callback_desc.encode("utf-8")), dch.Channel.attach
+                )
+            )
 
         if not self._device_manager:
             for callback_desc in batch.callback_descriptors:

@@ -29,6 +29,7 @@
 # pylint: disable=unused-import
 import socket
 import dragon
+import dragon.channels as dch
 
 # pylint: enable=unused-import
 # pylint: enable=import-error
@@ -40,10 +41,9 @@ import os
 import sys
 import typing as t
 
-from smartsim._core.entrypoints.service import ResourceType, Service
+from smartsim._core.entrypoints.service import DragonShutdownResource, Service
 from smartsim._core.mli.comm.channel.dragon_channel import DragonCommChannel
 from smartsim._core.mli.comm.channel.dragon_util import (
-    channel_to_descriptor,
     create_local,
 )
 from smartsim._core.mli.infrastructure.comm.consumer import EventConsumer
@@ -102,8 +102,10 @@ class ConsumerRegistrationListener(Service):
 
         if self._consumer:
             self.track_resource(
-                ResourceType.CHANNEL,
-                channel_to_descriptor(self._consumer._comm_channel._channel),
+                DragonShutdownResource(
+                    self._consumer._comm_channel._channel.serialize(),
+                    dch.Channel.attach,
+                )
             )
 
     def _on_start(self) -> None:
@@ -263,7 +265,9 @@ class ConsumerRegistrationListener(Service):
         logger.info("Creating event consumer")
 
         dragon_channel = create_local(500)
-        self.track_resource(ResourceType.CHANNEL, channel_to_descriptor(dragon_channel))
+        self.track_resource(
+            DragonShutdownResource(dragon_channel.serialize(), dch.Channel.attach)
+        )
 
         event_channel = DragonCommChannel(dragon_channel)
 

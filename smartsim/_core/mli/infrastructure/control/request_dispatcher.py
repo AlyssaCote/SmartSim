@@ -42,8 +42,7 @@ import typing as t
 import uuid
 from queue import Empty, Full, Queue
 
-from smartsim._core.entrypoints.service import ResourceType, Service
-from smartsim._core.mli.comm.channel.dragon_util import pool_to_descriptor
+from smartsim._core.entrypoints.service import DragonShutdownResource, Service
 
 from .....error import SmartSimError
 from .....log import get_logger
@@ -262,7 +261,9 @@ class RequestDispatcher(Service):
         self._perf_timer = PerfTimer(prefix="r_", debug=False, timing_on=True)
         """Performance timer"""
 
-        self.track_resource(ResourceType.MEM_POOL, pool_to_descriptor(self._mem_pool))
+        self.track_resource(
+            DragonShutdownResource(self._mem_pool.serialize(), MemoryPool.attach)
+        )
 
     @property
     def has_featurestore_factory(self) -> bool:

@@ -295,7 +295,7 @@ def retrieve_asset(
     download_dir = request.working_dir / str(asset.id)
 
     # if we've previously downloaded the release and still have
-    # wheels laying around, use that cached version instead
+    # wheels laying around,remove the old assets and directories
     cleanup(download_dir)
     download_dir.mkdir(parents=True, exist_ok=True)
 

@@ -29,17 +29,8 @@ import signal
 import time
 import typing as t
 from abc import ABC, abstractmethod
-from enum import Enum
 from types import FrameType
 
-import dragon.globalservices.pool as dragon_gs_pool
-from dragon.managed_memory import MemoryPool
-
-from smartsim._core.mli.comm.channel.dragon_util import (
-    descriptor_to_channel,
-    descriptor_to_fli,
-)
-from smartsim._core.mli.infrastructure.storage.dragon_util import descriptor_to_ddict
 from smartsim.log import get_logger
 
 logger = get_logger(__name__)
@@ -47,11 +38,13 @@ logger = get_logger(__name__)
 SIGNALS = [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM, signal.SIGABRT]
 
 
-class ResourceType(Enum):
-    CHANNEL = "channel"
-    FLI = "fli"
-    MEM_POOL = "mem_pool"
-    DDICT = "ddict"
+class DragonShutdownResource(t.NamedTuple):
+    """Resource for tracking and automatic cleanup when the service is shutting."""
+
+    resource_descriptor: t.Union[str, bytes]
+    """Descriptor of the resource to track"""
+    attacher: t.Callable[[t.Union[str, bytes]], t.Any]
+    """Function to attach to the resource"""
 
 
 class Service(ABC):
@@ -101,28 +94,16 @@ class Service(ABC):
         """The timestamp of the latest health check"""
         self.trigger_shutdown = False
         """Flag to trigger shutdown of the service"""
-        self.dragon_resources: t.Dict[ResourceType, t.Set[str]] = {
-            ResourceType.CHANNEL: set(),
-            ResourceType.FLI: set(),
-            ResourceType.MEM_POOL: set(),
-            ResourceType.DDICT: set(),
-        }
-        """Dict of resource type to list of resource descriptors
-        to shutdown upon service termination"""
+        self.dragon_resources: t.Set[DragonShutdownResource] = set()
 
         self.register_signal_handlers()
 
-    def track_resource(self, resource_type: ResourceType, resource_desc: str) -> None:
-        """Add a resource to the specified resource type list for tracking.
+    def track_resource(self, resource: DragonShutdownResource) -> None:
+        """Add a resource for tracking.
 
-        :param resource_type: The type of resource to add
-        :param resource_desc: The descriptor of the resource to add
-        :raises ValueError: If the resource type is not recognized
+        :param resource: Resource to track
         """
-        if resource_type in self.dragon_resources:
-            self.dragon_resources[resource_type].add(resource_desc)
-        else:
-            raise ValueError(f"Unknown resource type: {resource_type}")
+        self.dragon_resources.add(resource)
 
     @abstractmethod
     def _on_iteration(self) -> None:
@@ -144,38 +125,26 @@ class Service(ABC):
         the main event loop during automatic shutdown."""
         logger.debug(f"Shutting down {self.__class__.__name__}")
 
-        channel_descriptors = self.dragon_resources[ResourceType.CHANNEL]
-        for channel_desc in channel_descriptors:
-            try:
-                descriptor_to_channel(channel_desc).destroy()
-            except Exception as e:
-                logger.exception(f"Failed to destroy channel {channel_desc}")
-                logger.exception(f"{e}")
+        num_resources_destroyed = 0
 
-        fli_descriptors = self.dragon_resources[ResourceType.FLI]
-        for fli_desc in fli_descriptors:
+        for resource in self.dragon_resources:
             try:
-                descriptor_to_fli(fli_desc).destroy()
+                resource.attacher(resource.resource_descriptor).destroy()
+                num_resources_destroyed += 1
             except Exception as e:
-                logger.exception(f"Failed to destroy FLI {fli_desc}")
-                logger.exception(f"{e}")
+                raise e
+                # logger.exception(
+                #     f"Failed to destroy resource {resource.resource_descriptor}"
+                # )
+                # logger.exception(f"{e}")
 
-        mem_pool_descriptors = self.dragon_resources[ResourceType.MEM_POOL]
-        for mem_pool_desc in mem_pool_descriptors:
-            try:
-                MemoryPool.attach(dragon_gs_pool.create(2 * 1024**3).sdesc).destroy()
-                # hard coding is bad!
-            except Exception as e:
-                logger.exception(f"Failed to destroy mem pool {mem_pool_desc}")
-                logger.exception(f"{e}")
-
-        ddict_descriptors = self.dragon_resources[ResourceType.DDICT]
-        for ddict_desc in ddict_descriptors:
-            try:
-                descriptor_to_ddict(ddict_desc).destroy()
-            except Exception as e:
-                logger.exception(f"Failed to destroy ddict {ddict_desc}")
-                logger.exception(f"{e}")
+        if num_resources_destroyed != len(self.dragon_resources):
+            logger.warning(
+                f"Failed to destroy all resources in {self.__class__.__name__}"
+            )
+        else:
+            logger.debug(f"Destroyed all resources in {self.__class__.__name__}")
+            self.dragon_resources.clear()
 
     def _on_health_check(self) -> None:
         """Empty hook method for use by subclasses. Invoked based on the
@@ -196,7 +165,8 @@ class Service(ABC):
         """Log the remaining cooldown time, if any"""
         remaining = self._cooldown - elapsed
         if remaining > 0:
-            # logger.debug(f"{abs(remaining):.2f}s remains of {self._cooldown}s cooldown")
+            # logger.debug(f"{abs(remaining):.2f}s remains of
+            # {self._cooldown}s cooldown")
             ...
         else:
             logger.info(f"exceeded cooldown {self._cooldown}s by {abs(remaining):.2f}s")
@@ -263,10 +233,15 @@ class Service(ABC):
             logger.exception("Service shutdown may not have completed.")
 
     def handle_signal(self, signo: int, _frame: t.Optional[FrameType] = None) -> None:
+        """Signal handler for the service.
+
+        :param signo: The signal number
+        :param _frame: The frame object
+        """
         logger.info(f"Received signal {signo}")
         self.trigger_shutdown = True
 
     def register_signal_handlers(self) -> None:
-        """Register signal handlers for the service"""
+        """Register signal handlers for the service."""
         for sig in SIGNALS:
             signal.signal(sig, self.handle_signal)

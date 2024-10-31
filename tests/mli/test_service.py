@@ -36,7 +36,7 @@ import pytest
 import torch
 
 import smartsim.error as sse
-from smartsim._core.entrypoints.service import Service, SIGNALS
+from smartsim._core.entrypoints.service import SIGNALS, Service
 
 # The tests in this file belong to the group_b group
 pytestmark = pytest.mark.group_a
@@ -303,10 +303,11 @@ def test_service_health_check_freq_unbound() -> None:
 def test_handle_signal(sig: signal.Signals):
     """Verify that the handle_signal method sets the trigger_shutdown flag."""
     service = SimpleService(log=[])
-    
+
     assert service.trigger_shutdown == False
     service.handle_signal(sig)
     assert service.trigger_shutdown == True
+
 
 def test_register_signal_handlers():
     """Verify that the register_signal_handlers method registers the signal handlers."""
